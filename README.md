@@ -4,6 +4,8 @@
 
 Welcome to **Project YagaAi**.
 
+> **Note:** This project is fundamentally built upon **OpenClawd** (formerly Moltbot, formerly ClawdBot). This platform is the core basis of this entire experiment.
+
 This is not a polished product. This is not a startup launch. This is a manifesto, a madness, and a bold experiment to answer one simple, slightly terrifying question:
 
 **Can I manage a software development team composed entirely of AI agents?**
@@ -46,7 +48,7 @@ I’ve hired (spun up) four distinct personas. They live in isolated Azure VMs a
 
 ## 🛠️ Under The Hood (For the Techies)
 
-Project YagaAi is built on **OpenClaw** (formerly Moltbot, formerly ClawdBot), an open-source AI agent platform that lets me hook these personas into real-world tools.
+Project YagaAi utilizes **OpenClawd**, an open-source AI agent platform that lets me hook these personas into real-world tools.
 
 ### Architecture Overview
 - **Infrastructure**: Each agent runs on its own dedicated Azure VM. We believe in personal space here.
