@@ -1,185 +1,279 @@
 # 11 — Implementation Decisions
 
-This document records the architectural decisions that must be made before
-implementation can begin. Each decision is a choice between concrete options —
-leaving it open means the code will make it implicitly, which is worse.
+This document records the implementation decisions that must be made before
+architecture prose turns into code.
 
-This document is separate from the architecture docs because its content is
-time-bound: once decisions are made, they become constraints visible in the code
-and this document becomes a record of why, not what.
+For the doc 12 integration, the most important rule is simple:
 
----
+> **If a decision affects `02`, `03`, `08`, or `09`, it must be explicit here first.**
 
-## Decision 1: Event Transport
-
-**Question:** Through what mechanism do agents exchange events and commands?
-
-**Options:**
-- A: PostgreSQL table + LISTEN/NOTIFY — simple, no new infra, works well for 4 agents
-- B: Redis Streams — durable, fast, but requires Redis
-- C: In-process event bus — simplest for v1 if all agents run in one process
-- D: NATS / RabbitMQ — full broker, overkill for v1
-
-**Recommendation for v1:** Option A (PostgreSQL). MissionControl already uses PostgreSQL.
-An `event_queue` table with LISTEN/NOTIFY per-agent channel gives durable delivery,
-dedup via `dedup_key` lookup, and replay via table scan — all without new infrastructure.
-
-**What this determines:** Implementation of retry, out-of-order handling, dedup storage,
-and all event subscription code.
-
-**Decision required before:** Any code touching `emit()`, `subscribe()`, or event consumers.
+Leaving a decision open does not keep the system flexible. It guarantees that the code
+or downstream docs will make the choice implicitly.
 
 ---
 
-## Decision 2: Agent Deployment Model
+## Phase 0 Gating Decisions for Request / Routing / Publication
 
-**Question:** How does each agent "live" — is it always-on, event-driven, or on-demand?
+These are the blocking v1 decisions for integrating the doc 12 model.
 
-**Options:**
-- A: Each agent is a long-running process, always listening for events on its channel
-- B: Each agent is invoked per-task (serverless-style) — started when there's work, exits when done
-- C: One process hosts all agents as separate coroutines / threads
+### Decision 1 — `request_id` vs `correlation_id`
 
-**Recommendation for v1:** Option A (long-running processes) or C (single process with
-coroutine-per-agent). Option B requires a job runner and complicates memory continuity
-(agent memory must be fully durable, nothing in-process). For 4 agents on one machine,
-A or C is simpler.
+**Chosen v1 stance:** They are **always distinct**.
 
-**What this determines:** How "agent accepts handoff" is implemented — HTTP call to a
-running process (A), job queue entry polled at startup (B), or in-process message (C).
-Also determines session lifecycle: when does a session start and end.
+- `request_id` identifies the user-originated request record.
+- `correlation_id` groups the execution/event tree for one logical run.
+- In v1, a durable user-originated request creates one primary correlation scope when it
+  is normalized into the owner-facing path.
+- Subsequent events for the same delegated work normally reuse that correlation scope.
+- If a future sub-flow needs a separate correlation scope, it must still retain the
+  originating `request_id` link.
 
-**Decision required before:** Any scaffolding code for agents.
+**Why:**
+- Operators need a stable request identity even if execution splits, retries, or fans out.
+- `request_id` is the human/request routing identity.
+- `correlation_id` is the execution lineage identity.
 
----
-
-## Decision 3: Agent ↔ Execution Runtime Interface
-
-**Question:** How does Naomi "use" Claude Code? How does James "talk to" the user?
-
-This is the most critical missing decision. The entire failure/retry model depends on
-the answer.
-
-### James
-
-James is the user-facing agent. Options:
-- A: James runs as a CLI session — user types, James processes, responds
-- B: James runs as a persistent process with an HTTP API — user messages come as requests
-- C: James is triggered per-message (stateless, with memory loaded from store each time)
-
-**What this determines:** Whether "James is unavailable" is even a possible state,
-how the user interacts while Naomi works async, and what "session" means for James.
-
-### Naomi
-
-Naomi implements tasks using an execution runtime. Options:
-- A: Naomi is a Claude API agent with a tool `run_claude_code(prompt, context) → result`
-  — Claude Code is a synchronous tool call
-- B: Naomi is a Claude API agent that spawns a Claude Code process async and polls for result
-- C: Naomi is a thin orchestrator (Python) that builds prompts and calls Claude Code CLI directly,
-  with no LLM of her own
-
-**What this determines:** How execution timeout is detected (exception vs heartbeat),
-how partial results are recovered, and what Naomi's "decision-making" looks like.
-
-**Recommendation:** Option A for Naomi — Claude API agent where Claude Code is a tool.
-This makes execution timeout = tool call timeout, recovery = retry the tool call,
-and Naomi's reasoning is the LLM layer above.
-
-### Amos
-
-Amos reviews code and verifies functionality. Options:
-- A: Amos is a Claude API agent with read-only tools: read artifact, read PR diff, write review
-- B: Amos has no execution runtime — review is done by Claude reasoning over artifact content
-
-Amos does NOT need a code execution runtime. Review and verify are analytical, not execution-based.
-Amos may need: `read_artifact(ref)`, `read_pr_diff(ref)`, `write_review_comments(us_ref, comments)`.
-
-### Alex
-
-Alex does research. Options:
-- A: Claude API agent with tools: `web_search(query)`, `read_document(url)`, `write_report()`
-- B: Claude API agent using MCP tools for search and document access
-
-**Decision required before:** Any agent implementation.
+**Implication for docs:**
+- `09` must expose both.
+- `03` must stop treating `correlation_id` as a sufficient stand-in for request identity.
 
 ---
 
-## Decision 4: Mission Control as Component
+### Decision 2 — Request-state shape
 
-**Question:** Is MC a separate service or a library?
+**Chosen v1 stance:** Use a **first-class persisted request record**.
 
-**Options:**
-- A: MC is a library — agents import it and call `mc.transition(us_id, from, to, actor)`
-- B: MC is a separate HTTP service — agents call it via API
-- C: MC logic lives in the database as stored procedures / triggers
+The request record is the durable source of truth for:
+- request identity,
+- origin session metadata,
+- reply target metadata,
+- publication state,
+- strategic owner pointer,
+- links to execution state.
 
-**Recommendation for v1:** Option A (library). One process, one deployment, no network
-calls for state validation. Evolve to service (B) when there's a reason to deploy MC
-independently (e.g., web UI needs direct MC access).
+It is not a replacement for tasks, flows, or events.
 
-**What this determines:** Where process rules live (in-process vs over the wire),
-how `transition.rejected` is surfaced (exception vs HTTP error), and how easy it is
-to test MC rules in isolation.
+**Why:**
+- It gives one durable home for routing and publication truth.
+- It avoids reconstructing routing state from transcripts.
+- It keeps request/publication concerns out of Mission Control, memory, and artifacts.
 
-**Decision required before:** Any MC state machine code.
-
----
-
-## Decision 5: Memory Storage Schema
-
-**Question:** What is the physical structure of agent memory?
-
-**Recommended minimum schema (v1):**
-
-```sql
-CREATE TABLE agent_memory (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id    TEXT NOT NULL,
-  layer       TEXT NOT NULL CHECK (layer IN ('working', 'episodic', 'semantic', 'procedural')),
-  key         TEXT NOT NULL,
-  value       JSONB NOT NULL,
-  justification TEXT,
-  version     INT  NOT NULL DEFAULT 1,
-  replaces_id UUID REFERENCES agent_memory(id),
-  retracted   BOOLEAN NOT NULL DEFAULT FALSE,
-  retracted_by TEXT,
-  retraction_reason TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by  TEXT NOT NULL
-);
-
-CREATE INDEX ON agent_memory (agent_id, layer, retracted);
-CREATE INDEX ON agent_memory (agent_id, layer, key);
-```
-
-**Layer enforcement in v1:** The `layer` field is metadata for audit and context loading
-heuristics. The code does not enforce different storage backends per layer. All layers
-use the same table.
-
-**Context loading in v1 (no vector search):**
-- `working`: all non-retracted entries for agent where `session_id` matches
-- `episodic`: last 5 non-retracted entries for agent ordered by `created_at DESC`
-- `procedural`: all non-retracted entries for agent's domain
-- `semantic`: all non-retracted entries for agent
-
-Vector similarity for episodic/semantic retrieval is a v2 concern.
-
-**Decision required before:** Any memory read/write code.
+**Implication for docs:**
+- `02` can now use the concrete term **request record**, not only “equivalent durable projection”.
 
 ---
 
-## v1 Decisions: What Is NOT in Scope
+### Decision 3 — Publication-state owner / writer
 
-These choices are explicit to prevent scope creep:
+**Chosen v1 stance:** The **request-state writer on the owner-side runtime path** is the
+canonical writer of `reply_publish_status`.
+
+Concretely:
+- the channel/surface adapter performs the concrete publish operation,
+- the adapter emits publish result events,
+- the owner-side request-state path records the durable publication state.
+
+Channel adapters are therefore execution actors for publication, but **not** the
+authoritative store of publication truth.
+
+**Why:**
+- It keeps channel sessions thin.
+- It prevents transport-local state from becoming the real source of truth.
+- It supports restart/recovery without depending on a live adapter process.
+
+---
+
+### Decision 4 — Publication-state vocabulary
+
+**Chosen v1 stance:** The v1 publication-state vocabulary is:
+- `pending`
+- `attempted`
+- `published`
+- `failed`
+- `unknown`
+- `fallback_required`
+- `abandoned`
+
+**Interpretation:**
+- `pending` = publish intent exists, not yet attempted
+- `attempted` = at least one concrete publish attempt has been made, no terminal outcome yet
+- `published` = intended human-visible reply confirmed published
+- `failed` = publish attempt ended in a known failure state
+- `unknown` = publish outcome is ambiguous and must be reconciled
+- `fallback_required` = primary route is no longer valid/safe; owner or operator action needed
+- `abandoned` = reply will no longer be attempted by design/policy
+
+**Why:**
+- `08`, `09`, and request-level observability need concrete states, not vague prose.
+
+---
+
+### Decision 5 — Publish retry authority
+
+**Chosen v1 stance:** Retry authority is split.
+
+#### Mechanical retry
+The publish-capable runtime/adapter path may perform a **bounded mechanical retry**
+without re-entering owner reasoning only when all of the following are true:
+- the reply content is unchanged,
+- the reply target is unchanged,
+- the same `publish_dedup_key` is reused,
+- the retry is transport-safe and idempotent,
+- no fallback or semantic routing decision is required.
+
+#### Strategic retry / fallback
+Owner reasoning is required when:
+- the reply target must change,
+- fallback must be invoked,
+- the content should change,
+- the prior outcome is ambiguous in a way that could duplicate a human-visible message,
+- policy or operator approval is required.
+
+**Why:**
+- This keeps the common retry case cheap without letting adapters make strategic routing decisions.
+
+---
+
+### Decision 6 — Reply-metadata carriage model in handoffs
+
+**Chosen v1 stance:** Use a **mixed model**.
+
+For user-originated durable work:
+- handoffs must carry `request_id` inline,
+- may carry `request_class` inline,
+- may carry a read-only routing snapshot if useful,
+- but the authoritative reply-routing truth remains in the request record.
+
+Default v1 rule:
+- specialists receive **pointer-first** routing context,
+- `reply_session_key` may be present as an advisory/read-only snapshot,
+- specialists must not mutate reply routing directly.
+
+**Why:**
+- Inline `request_id` keeps joins easy.
+- Pointer-first routing avoids bloating handoffs with mutable routing baggage.
+
+---
+
+### Decision 7 — Authoritative vs derived ownership in request state
+
+**Chosen v1 stance:** `current_owner_agent_id` in request state is **derived/mirrored**, not authoritative.
+
+The authoritative split is:
+- `strategic_owner_agent_id` in the request record = authoritative for request-level accountability
+- task/flow/MC ownership = authoritative for execution ownership and current work state
+- `current_owner_agent_id` in request state = convenience projection for request-level observability
+
+**Why:**
+- This avoids a second ownership authority competing with task/flow systems.
+
+---
+
+### Decision 8 — `reply_target` vs `reply_session_key`
+
+**Chosen v1 stance:**
+- `reply_target` is the durable routing concept.
+- `reply_session_key` is the current concrete publish-capable endpoint that satisfies that target.
+
+The target may remain stable while the session key rotates.
+
+**Why:**
+- Durable routing should not depend on one literal session key staying valid forever.
+
+---
+
+### Decision 9 — Persistence and restart recovery
+
+**Chosen v1 stance:** After restart, the system must be able to reconstruct request
+routing/publication state from:
+- the request record,
+- the event log,
+- task/flow state,
+without depending on transcript reconstruction.
+
+Transcripts may help debugging, but they are not the recovery mechanism.
+
+---
+
+## Summary Table — Phase 0 Decisions
+
+| Decision | Chosen v1 stance |
+|---|---|
+| `request_id` vs `correlation_id` | Always distinct |
+| Request-state shape | First-class persisted request record |
+| Publication-state writer | Owner-side request-state writer; adapters emit result events |
+| Publication-state vocabulary | `pending`, `attempted`, `published`, `failed`, `unknown`, `fallback_required`, `abandoned` |
+| Publish retry authority | Mechanical retry allowed in bounded/idempotent cases; fallback/semantic retry requires owner reasoning |
+| Handoff routing carriage | Mixed model: inline `request_id`, pointer-first routing truth |
+| `current_owner_agent_id` in request state | Derived/mirrored, not authoritative |
+| `reply_target` vs `reply_session_key` | Durable concept vs current concrete endpoint |
+| Restart recovery | Request record + event log + task state; no transcript dependency |
+
+---
+
+## Additional Implementation Decisions
+
+The following pre-existing implementation decisions remain relevant to the runtime
+beyond the doc 12 integration.
+
+### Decision 10 — Event transport
+
+**Chosen v1 stance:** PostgreSQL table + `LISTEN/NOTIFY`.
+
+Use a durable `event_queue` / event-log backed by PostgreSQL with dedup via
+`dedup_key` and replay via table scan. This keeps v1 on the same persistence layer
+already used by Mission Control.
+
+---
+
+### Decision 11 — Agent deployment model
+
+**Chosen v1 stance:** Long-running agent processes or one host process with
+stable per-agent workers.
+
+The system should not assume serverless per-task cold starts for v1. Durable owners
+need stable coordination endpoints and predictable event consumption.
+
+---
+
+### Decision 12 — Agent ↔ execution runtime interface
+
+**Chosen v1 stance:**
+- James = user-facing owner agent
+- Naomi = owner agent that can call code-execution runtime(s)
+- Amos = analytical/review agent with read/review tools
+- Alex = research agent with search/read/report tools
+
+Execution runtimes remain subordinate to the owning agent. They are not durable owners.
+
+---
+
+### Decision 13 — Mission Control as component
+
+**Chosen v1 stance:** Mission Control remains the authoritative workflow state component
+for the development flow, regardless of whether it is implemented as library or service.
+
+The critical architectural constraint is not deployment shape. It is that MC remains the
+source of truth for US/task workflow state in the dev flow.
+
+---
+
+### Decision 14 — Memory storage model
+
+**Chosen v1 stance:** Memory remains layered and per-agent. It is not the source of truth
+for request routing, publication state, or execution ownership.
+
+---
+
+## What v1 Explicitly Does Not Do
 
 | Feature | Decision | Notes |
 |---------|----------|-------|
-| `claimed` handoff state | Removed from v1 | Use `accepted` only |
-| Out-of-order event buffering | Not in v1 | Log and discard; add if needed empirically |
-| Contract version migration | Not in v1 | Hardcode `"v1"` everywhere |
-| Shared facts governance code | Not in v1 | Keep the field, skip governance layer |
-| Vector similarity memory retrieval | Not in v1 | Recency + domain tag lookup |
-| Google A2A / MCP wire compatibility | Not in v1 | Internal protocol only |
-| Multi-tenancy | Not in v1 | Internal use only |
-| OpenTelemetry export | Not in v1, but design for compatibility | Use structured events that can be mapped to OTel spans later |
+| Request inferred from transcript only | Not allowed | Durable routing/publication needs a request record |
+| Channel session as durable owner | Not allowed | Channel sessions are surface adapters |
+| Specialist mutation of reply routing | Not allowed by default | Owner path controls routing changes |
+| Request lifecycle as task status set | Not allowed | Request projection != canonical task statuses |
+| Generic second workflow engine | Not in v1 | Request layer is routing/publication, not orchestration replacement |
+| Transcript-based restart recovery | Not in v1 | Recovery must work from durable records |
+| Automatic cross-surface retargeting | Not in v1 by default | Requires explicit transfer or fallback decision |
+| Unlimited autonomous publish retry | Not in v1 | Retry authority is bounded and policy-driven |

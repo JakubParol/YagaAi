@@ -2,17 +2,16 @@
 
 ## Ownership Model
 
-Every task and flow explicitly stores:
+The runtime has to keep three ownership ideas distinct:
 
-| Field | Meaning |
-|-------|---------|
-| `owner` | Agent currently responsible for progress |
-| `requester` | Agent or user who initiated the work |
-| `executor` | Optional runtime or worker performing execution |
-| `callback_target` | Where the result must be returned |
-| `status` | Canonical current state |
+| Field / concept | Meaning | Authoritative source |
+|-------|---------|----------------------|
+| `strategic_owner_agent_id` | Agent accountable for the request as a whole | request record |
+| task / US `owner` | Agent currently responsible for execution progress | task store / Mission Control |
+| `callback_target` | Where execution results return operationally | handoff / task contract |
+| `reply_target` | Where the human-visible reply should be published | request record |
 
-Ownership must not be inferred from chat context. It is a first-class field.
+Ownership must not be inferred from chat context. It is first-class, durable metadata.
 
 ## Final Accountability vs Execution Ownership
 
@@ -20,21 +19,38 @@ The system maintains a deliberate split:
 
 | Type | Holder | Meaning |
 |------|--------|---------|
-| **Final accountability** | James | Responsible for outcome toward the user |
-| **Execution ownership** | Specialist agent | Responsible within their domain |
+| **Final accountability / strategic ownership** | James (usually) | Responsible for outcome toward the user |
+| **Execution ownership** | Specialist agent | Responsible for delegated work within their domain |
 
 In practice:
-- **James** owns the strategic conversation, delegation, and final outcome toward the user
+- **James** owns the strategic conversation, delegation, request continuity, and final human-facing outcome
 - **Alex** owns research tasks
-- **Naomi** owns implementation tasks and the execution plan in the dev flow
-- **Amos** owns quality, review, and verify
+- **Naomi** owns implementation tasks and dev execution
+- **Amos** owns review / verify quality gates
 
 Delegation does not transfer final accountability from James. It transfers execution ownership
-to the specialist for the scope of that task.
+for a bounded scope of work.
+
+## Callback Target vs Reply Target
+
+These are different concepts and must stay different:
+
+| Concept | Meaning |
+|--------|---------|
+| `callback_target` | Where specialist results return operationally |
+| `reply_target` | Where the human-visible response should be published |
+
+A task may be `Done` and callback may be successful while human reply publication is still:
+- pending
+- failed
+- unknown
+- awaiting fallback
+
+That is expected. It is not an inconsistency.
 
 ## Canonical Task Lifecycle
 
-```
+```text
 Created → Accepted → In Progress → Review → Verify → Done
                                                     ↓
                                              Blocked | Escalated | Cancelled
@@ -47,10 +63,31 @@ Created → Accepted → In Progress → Review → Verify → Done
 | `In Progress` | Active work is underway |
 | `Review` | Work submitted for review (code review, peer check) |
 | `Verify` | Work submitted for functional verification |
-| `Done` | Work complete, accepted, callback sent |
+| `Done` | Execution work complete; callback obligations satisfied |
 | `Blocked` | Progress impossible; explicit reason required |
 | `Escalated` | Deadlock or repeated failure; escalated to senior owner |
 | `Cancelled` | Explicitly terminated; artifacts may still exist |
+
+### Important clarification
+
+`Done` means the execution work reached its terminal success state.
+It does **not** mean the intended human-visible reply has already been published.
+
+## Request-Level Projection vs Task Status
+
+Request/publication projection labels are not canonical task statuses.
+They are a separate operational view over the request record.
+
+A practical request-level projection may include labels such as:
+- `normalized`
+- `delegated`
+- `awaiting_callback`
+- `reply_publish_pending`
+- `reply_published`
+- `reply_publish_failed`
+- `fallback_required`
+
+These are useful operator-facing projections, not task lifecycle states.
 
 ## Status Transition Table
 
@@ -64,47 +101,52 @@ Created → Accepted → In Progress → Review → Verify → Done
 | `In Progress` | block | `Blocked` | owner | Reason required |
 | `Review` | approve | `Verify` or `Done` | reviewer | Depends on flow type |
 | `Review` | return with comments | `In Progress` | reviewer | Reason and comments required |
-| `Verify` | pass | `Done` | verifier | Callback sent |
+| `Verify` | pass | `Done` | verifier | Execution work accepted |
 | `Verify` | fail | `In Progress` | verifier | Reason and comments required |
 | `Blocked` | unblock | `In Progress` | owner or James | |
-| `Blocked` | escalate | `Escalated` | owner or James | After defined threshold |
+| `Blocked` | escalate | `Escalated` | owner or James | After threshold |
 | `Escalated` | resolve | `In Progress` or `Done` | James | |
 | `Any` | cancel | `Cancelled` | requester or James | |
 
 ## Acceptance Semantics
 
-A task is not owned until explicitly accepted. Between dispatch and acceptance:
+A task is not execution-owned until explicitly accepted. Between dispatch and acceptance:
 - the requester retains accountability
 - the assignee has no obligation to begin work
-- timeout on acceptance triggers a retry or reassignment (see [08-failure-recovery-and-timeouts.md](08-failure-recovery-and-timeouts.md))
+- timeout on acceptance triggers retry or reassignment (see [08-failure-recovery-and-timeouts.md](08-failure-recovery-and-timeouts.md))
 
-An agent that accepts a task must:
-- emit an `accepted` event with a timestamp
-- set the task status to `Accepted`
-- optionally confirm the definition of done and deadline
+An accepted task must produce an explicit acceptance event and status change.
+
+## Request Closure Rule
+
+A **durable request** is not operationally closed until one of the following is true:
+1. the intended human-visible publication succeeded,
+2. the request was explicitly abandoned,
+3. an authorized fallback outcome superseded the primary publish path.
+
+This closure rule lives above task `Done`.
 
 ## Escalation Rules
 
 Escalation is not automatic retry. Escalation means a deadlock, repeated failure,
 or quality/scope conflict that cannot be resolved at the specialist level.
 
-Escalation triggers:
+Escalation triggers include:
 - code review loop exceeded 3 returns (`review_loop.limit_reached`)
 - verify loop exceeded 2 failures (`verify_loop.limit_reached`)
 - blocked task with no resolution path for a defined period
 - ownership conflict between agents
 - definition-of-done disagreement not resolvable between owner and reviewer
+- unresolved publish failure or fallback requirement on a user-visible request
 
 On escalation:
-- James receives an `escalation-event` with full context: task reference, failure reason,
-  prior recovery attempts, partial artifacts, and loop history
-- The task status moves to `Escalated`
-- James decides: scope change, priority change, cancellation, or direct resolution
-- James must emit a resolution event; the task must not remain in `Escalated` indefinitely
+- James receives the escalation context
+- the task/US status moves to `Escalated` when applicable
+- the request may remain operationally open until publication or abandonment is resolved
 
 ## Rejection Loop Policy
 
-An assignee may reject a handoff. This reverts ownership to the requester.
+An assignee may reject a handoff. This reverts execution ownership to the requester.
 
 | Rejection count | Action |
 |----------------|--------|
@@ -113,18 +155,17 @@ An assignee may reject a handoff. This reverts ownership to the requester.
 | James rejected | James escalates to human operator |
 
 A rejected handoff requires an explicit reason. The requester must address the reason
-before retrying; retrying with an identical handoff after rejection is not allowed.
+before retrying.
 
 ## Concurrent Work and Capacity
 
 Agents process tasks sequentially by default. If an agent already owns an active task
-in `In Progress`, a new handoff is queued pending completion or explicit override.
+in `In Progress`, new work is queued pending completion or explicit override.
 
 For Amos: `Verify` takes priority over `Code Review` to prevent Done-blocking.
 
 James must not dispatch multiple high-priority US assignments to Naomi simultaneously
-without acknowledging the queue. If Naomi's queue is non-empty, James should receive
-a capacity signal before dispatching additional work.
+without acknowledging the queue.
 
 ## Execution Timeout vs Workflow Timeout
 
@@ -134,10 +175,10 @@ These are distinct concepts:
 |------|---------|---------|
 | **Execution timeout** | Runtime or worker has not responded within expected execution time | Runtime recovery: retry, reassign executor |
 | **Workflow timeout** | Expected progress in the process has not occurred | Workflow recovery: escalate, reassign owner, block |
+| **Publication timeout / ambiguity** | Human-visible publication did not complete or outcome is unknown | Request/publication recovery: retry, reconcile, fallback, escalate |
 
-An execution timeout at the Claude Code level does not automatically become a workflow
-timeout. The runtime may retry the execution. Only if the task has not advanced after
-a defined number of retries or a workflow-level deadline does it escalate to James.
+An execution timeout at the runtime level does not automatically become a workflow timeout.
+A task may be done while publication remains unresolved.
 
 ## Who Can Change What
 
@@ -157,4 +198,8 @@ a defined number of retries or a workflow-level deadline does it escalate to Jam
 | Escalate | owner, James |
 | Resolve escalation | James |
 | Cancel task | requester, James |
+| Change reply target | strategic owner / approved runtime path |
+| Declare request abandoned | strategic owner / operator |
 | Override status | James only |
+
+Specialists do not become owners of human-visible reply routing by default.

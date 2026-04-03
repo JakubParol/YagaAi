@@ -2,135 +2,191 @@
 
 ## Design Principle
 
-The system must be designed for more than the happy path. Failures are not edge cases —
-they are expected operational events that require defined handling.
+Failures are expected operational events, not edge cases.
 
-For every failure mode, the system must have:
-- a **recovery owner** (who is responsible for resolving it)
-- a **default action** (retry / reassign / escalate / mark blocked)
-- an **explicit terminal state** or compensation path
+For every important failure mode, the system must define:
+- a **recovery owner**
+- a **default action**
+- a **bounded retry / escalation path**
+- an explicit terminal or near-terminal outcome
+
+The integration of doc 12 adds one important rule:
+
+> **Task success, callback success, and human-visible publication success are separate recovery concerns.**
+
+---
 
 ## Failure Categories
 
-### 1. Delivery Failures
+### 1. Inbound / Normalization Failures
 
-| Failure | Description | Default Action |
-|---------|-------------|----------------|
-| Missing callback | Task completed but callback never received | Retry callback; if persistent, mark task as `Blocked` and notify James |
-| Duplicate event | Same event delivered more than once | Idempotent processing via `dedup_key`; second delivery is a no-op |
-| Out-of-order delivery | Events arrive in wrong sequence | Buffer and reorder using `causation_id`; if unresolvable, emit an ordering-error event |
-| Lost handoff | Handoff dispatched but never acknowledged | Retry after timeout; if no response, reassign or escalate |
+| Failure | Description | Recovery owner | Default action |
+|---------|-------------|----------------|----------------|
+| Duplicate inbound normalization | Same inbound request normalized more than once | owner-side request path | Dedup by request-level key; no duplicate work |
+| Adapter failure before durable acceptance | Surface adapter received the message but owner path did not durably accept it | surface adapter | Retry normalization with same dedup identity |
+| Main endpoint unavailable during normalization | Owner-facing `main` path unreachable/unavailable | surface adapter / runtime | Retry until timeout policy, then escalate |
+| Normalization rejected | Owner path explicitly rejects malformed or invalid request | owner-side runtime | Emit rejection; surface may notify/fail visibly if needed |
 
-### 2. Execution Failures
+### 2. Handoff / Callback Failures
 
-| Failure | Description | Default Action |
-|---------|-------------|----------------|
-| Worker crash | Execution runtime terminates mid-task | Reassign to a new execution; resume from last known checkpoint if available |
-| Orphaned work | Task accepted but no progress events for defined period | Workflow timeout triggered; owner notified; escalate if unresponsive |
-| Partial tool failure | Some tool calls succeed, others fail | Task moves to `Blocked` with partial artifact; owner decides retry or escalate |
-| Incomplete artifact | Artifact produced but fails validation | Task returns to `In Progress`; owner notified with validation error |
+| Failure | Description | Recovery owner | Default action |
+|---------|-------------|----------------|----------------|
+| Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout |
+| Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op |
+| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, block/escalate |
+| Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work |
+| Callback arrives after reassignment | Prior owner/executor returns late result after ownership moved | strategic owner | Reconcile against current authority; record late arrival |
 
-### 3. State Failures
+### 3. Execution / Workflow Failures
 
-| Failure | Description | Default Action |
-|---------|-------------|----------------|
-| Ownership conflict | Two agents claim ownership of the same task | James resolves; one ownership record is authoritative |
-| Status conflict | Task store and event log disagree on current state | Task store is authoritative; reconciliation event emitted |
-| Accepted task with no progress | Task accepted, status never moved to `In Progress` | Workflow timeout; owner prompted; escalate if no response |
-| Stale ownership | Previous owner no longer responsive or available | James reassigns; prior ownership is explicitly closed |
+| Failure | Description | Recovery owner | Default action |
+|---------|-------------|----------------|----------------|
+| Worker crash | Execution runtime terminates mid-task | task owner | Retry execution or reassign executor |
+| Orphaned work | Task accepted but no progress events for defined period | task owner / James | Workflow timeout, prompt owner, escalate if needed |
+| Partial tool failure | Some tool calls succeed, others fail | task owner | Block with explicit reason; decide retry or escalate |
+| Incomplete artifact | Artifact produced but fails validation | task owner / reviewer | Return to `In Progress` with error |
+| Status / ownership conflict | Durable state disagrees about current owner or status | James / MC | Use authoritative store, emit reconciliation event |
 
-### 4. Side-Effect Failures
+### 4. Reply Routing / Publication Failures
 
-| Failure | Description | Default Action |
-|---------|-------------|----------------|
-| Side effect completed without confirmation | Execution runtime performed an action (commit, API call) but no callback received | Verify via artifact or event; mark as `Blocked (unconfirmed)` pending verification |
-| Partial commit | Some changes applied, others not | Block US; Naomi performs reconciliation before resuming |
+| Failure | Description | Recovery owner | Default action |
+|---------|-------------|----------------|----------------|
+| Stale or missing reply target | Stored reply destination is invalid | strategic owner / request-state path | Mark `fallback_required` or retarget explicitly |
+| Publication failure after specialist success | Task is done but human reply was not published | strategic owner / request-state path | Retry / fallback / escalate |
+| Ambiguous publication after retry | Outcome unknown; reply may or may not have been delivered | strategic owner / request-state path | Mark `unknown`; reconcile before further publish |
+| Publish acknowledgement missing | Publish attempt started but terminal result never confirmed | request-state path | Mark `attempted` or `unknown`; bounded retry or reconcile |
+| Late publish success after ambiguity | Prior ambiguous attempt later proves successful | request-state path | Reconcile state; avoid duplicate publication |
+| Fallback invocation required | Primary target no longer safe/valid | strategic owner / operator | Apply approved fallback or escalate |
+
+### 5. Conversation Continuity Failures
+
+| Failure | Description | Recovery owner | Default action |
+|---------|-------------|----------------|----------------|
+| User follow-up while work is in flight | New message arrives before prior request closes | strategic owner | New request by default; explicitly merge if needed |
+| Cross-surface continuation | Same human continues on another surface | strategic owner | Create new request or explicit transfer/merge decision |
+| Reply target mutated implicitly | Target changed by side effect or convenience logic | strategic owner / operator | Reject implicit mutation; require explicit audit event |
+
+---
+
+## Dedup Domains
+
+Idempotency is domain-specific. The runtime must distinguish:
+
+| Domain | Protected by |
+|-------|---------------|
+| inbound request normalization | request-level dedup identity |
+| handoff / callback processing | message `dedup_key` |
+| reply publication | `publish_dedup_key` |
+
+Using one generic dedup story across all three domains creates bugs.
+
+---
 
 ## Timeout Types
 
-Execution timeout and workflow timeout are distinct and must not be conflated.
-
 ### Execution Timeout
-
-- **Definition:** The execution runtime or worker has not responded within the expected execution window
-- **Scope:** Runtime level
-- **Handler:** Runtime recovery — retry the execution, optionally with a new worker
-- **Does not automatically escalate** to workflow level until retries are exhausted
+- **Definition:** runtime/worker has not responded within the expected execution window
+- **Scope:** runtime level
+- **Handler:** retry execution, optionally with a new worker
 
 ### Workflow Timeout (SLA Timeout)
+- **Definition:** expected process progress has not occurred within a business window
+- **Scope:** task / flow level
+- **Handler:** notify owner, prompt, escalate if needed
 
-- **Definition:** Expected progress in the process has not occurred within a defined business window
-- **Scope:** Task / flow level
-- **Handler:** Workflow recovery — notify owner, prompt for update, escalate if no response
-- **Examples:** Task accepted but no `In Progress` within 1h; US in `Code Review` for >24h with no action
+### Publication Timeout / Ambiguity Timeout
+- **Definition:** a user-visible publish intent has no confirmed terminal outcome within policy window
+- **Scope:** request/publication level
+- **Handler:** bounded retry, reconciliation, fallback decision, or escalation
 
-### Timeout Decision Table
+## Timeout Decision Table
 
-| Scenario | Timeout Type | Default Action |
-|----------|-------------|----------------|
+| Scenario | Timeout type | Default action |
+|----------|--------------|----------------|
 | Execution runtime unresponsive | Execution | Retry execution |
 | Task accepted, no work started | Workflow | Notify owner |
 | Task in progress, no events for >N | Workflow | Notify owner; escalate if no response |
-| Callback not received after completion | Delivery | Retry callback |
 | Handoff not accepted within window | Workflow | Retry or reassign |
+| Callback not received after completion | Delivery / workflow | Retry callback |
+| Publish attempt has no terminal result | Publication | Reconcile, bounded retry, or fallback |
+
+---
 
 ## Recovery Paths
 
 ### Retry
-
 Used when:
-- the failure is transient (network, runtime restart)
+- failure is transient
 - idempotency is guaranteed
-- the task has not reached a blocking state
+- no strategic routing/content decision is required
 
-Retry must use the original `dedup_key` to prevent duplicate side effects.
+For publication, mechanical retry must reuse the same `publish_dedup_key`.
 
 ### Reassign
-
 Used when:
-- the original owner is unresponsive or unavailable
-- the execution runtime failed and cannot be resumed
+- original owner/executor is unresponsive or unavailable
+- execution runtime failed and cannot be resumed
 - explicit rejection has occurred
 
-Reassignment requires a new acceptance handoff. The prior owner's task record is
-explicitly closed.
+Reassignment requires a new acceptance handoff. Prior ownership must be explicitly closed.
+
+### Reconcile
+Used when:
+- late-arriving signals conflict with the currently believed state
+- publication outcome is ambiguous
+- callback or publish result arrives after cancellation/reassignment
+
+Reconciliation must preserve the audit trail and must not silently duplicate human-visible output.
 
 ### Escalate
-
 Used when:
-- retry and reassignment have been attempted and failed
-- a quality or scope deadlock exists (loop limit exceeded)
-- ownership cannot be determined
-- side-effect state is uncertain
+- retry/reassign/reconcile do not converge
+- a quality/scope deadlock exists
+- fallback requires policy or operator approval
+- publication remains unresolved beyond the allowed window
 
-Escalation sends an `escalation-event` to James with full context: task reference,
-failure reason, prior recovery attempts, and any partial artifacts.
+Escalation sends the full context to James (or operator path when required).
 
 ### Mark Blocked
-
 Used when:
-- the failure requires human or external input before work can continue
-- the recovery path is unclear but the task should not be cancelled
+- external input is required
+- no safe automated recovery exists yet
+- work should not be cancelled, but must not proceed silently
 
-A `Blocked` task has an explicit reason and a designated recovery owner. It is not
-a silent failure state.
+A blocked request/task always needs an explicit recovery owner.
+
+---
 
 ## Compensation and Terminal States
 
-Every failure path must reach a defined state. Terminal states are truly final;
-near-terminal states require active recovery but have defined exit paths.
-
 | State | Type | Meaning |
 |-------|------|---------|
-| `Done` | Terminal | Nominal completion; no further transitions |
-| `Cancelled` | Terminal | Explicitly terminated; no further transitions |
-| `Blocked` | Near-terminal | Cannot proceed; awaiting external resolution; exits to `In Progress` or `Escalated` |
-| `Escalated` | Near-terminal | James is the active recovery owner; exits to `In Progress`, `Done`, or `Cancelled` |
+| `Done` | Terminal for task | Execution work complete |
+| `Cancelled` | Terminal | Explicitly terminated |
+| `Blocked` | Near-terminal | Cannot proceed; awaiting external resolution |
+| `Escalated` | Near-terminal | James is active recovery owner |
+| `published` | Terminal for reply intent | Human-visible reply confirmed |
+| `abandoned` | Terminal for reply intent | Reply will not be attempted further |
+| `unknown` | Near-terminal / reconcile-required | Publish result ambiguous |
+| `fallback_required` | Near-terminal / decision-required | Primary path invalid; explicit choice needed |
 
-`Blocked` is not a terminal state. A task in `Blocked` must have an explicit recovery
-owner and a designated path to resolution. A `Blocked` task that does not receive
-attention within a defined window should auto-escalate to `Escalated`.
+A task may be `Done` while the request-level reply/publication path is still not terminal.
+That is valid and must be observable.
 
-A task must never be in an ambiguous non-terminal state indefinitely. The system
-should be designed to force failed tasks toward a terminal state or into `Blocked`
-with an explicit recovery action within a defined window.
+---
+
+## Minimum Reconciliation Expectations
+
+The system should define reconciliation behavior for at least:
+- callback after cancellation
+- callback after reassignment
+- publish success after retry ambiguity
+- duplicate publish ack / duplicate publish failure signal
+- cross-surface follow-up arriving before prior request closure
+
+The minimum acceptable behavior is not “be clever”.
+It is:
+- preserve audit trail,
+- avoid silent duplication,
+- keep one authoritative current state,
+- escalate when policy or human judgment is required.

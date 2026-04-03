@@ -6,10 +6,11 @@
 |--------|---------|----------|-------|----------------|
 | **agent** | Durable role with memory and responsibility | Yes | itself | agent record |
 | **session** | Current execution or conversation context | No (execution-scoped) | agent | event history |
+| **request** | User-originated request record with routing and publication state | Yes | strategic owner agent | request store |
 | **task** | Concrete unit of work | Yes | assigned agent | task store |
-| **flow** | Progression spanning tasks, events, and handoffs | Yes | orchestrating agent | task store / MC |
+| **flow** | Progression spanning tasks, events, and handoffs | Yes | orchestrating agent / MC | task store / MC |
 | **handoff** | Transfer of work and execution responsibility | Yes | requester until accepted | task store |
-| **event** | Fact that something happened | Yes (immutable) | runtime | event log |
+| **event** | Fact that something happened | Yes (immutable) | runtime / agent | event log |
 | **artifact** | Work result passed further | Yes | producing agent | artifact store |
 | **memory** | Persisted agent context | Yes | agent | memory store |
 | **work item / US** | Domain work object in Mission Control | Yes | assigned agent | Mission Control |
@@ -33,8 +34,42 @@ An agent must not be confused with its execution runtime. The agent decides; the
 
 A session is the current active execution or conversation context for an agent. It is
 execution-scoped and does not persist independently. Session state is reflected in the
-event history. When a session ends, the relevant outcomes should be written to memory
-and attached to their tasks as artifacts or status updates.
+event history.
+
+For user-facing work, sessions come in two important shapes:
+- **channel/surface sessions** — ingress/egress adapters bound to WhatsApp, Discord, web, etc.
+- **`main` session keys** — owner-facing coordination endpoints for durable work
+
+The durable owner remains the agent, not the session object.
+
+### Request
+
+A request is the durable record for a **user-originated** unit of work.
+
+A request record carries:
+- request identity (`request_id`)
+- origin session/context metadata
+- strategic owner metadata
+- callback metadata
+- reply target metadata
+- reply publication state
+- links to task/flow execution state
+
+A request is not a replacement for:
+- task
+- flow
+- handoff
+- event
+- artifact
+
+Instead:
+- a request may create or reference tasks, flows, and handoffs
+- a request may span multiple delegated tasks/handoffs
+- a flow may exist with or without a request depending on origin
+- scheduled/system/operator-originated flows do not necessarily begin with a request
+
+The request record is the source of truth for request routing and human-visible publication
+state. It is not a second workflow engine.
 
 ### Task
 
@@ -94,11 +129,13 @@ execution trace. They are not memory — they are the append-only log from which
 may be derived.
 
 Events carry:
-- a correlation ID (links all events in one flow or request)
+- a correlation ID (execution lineage)
 - a causation ID (links an event to the event that caused it)
 - a dedup key (for idempotent processing)
 - a timestamp
 - a type and payload
+
+For user-originated work, events also remain linked back to the request record.
 
 ### Artifact
 
@@ -116,8 +153,8 @@ Memory is the persisted context of an agent. It is layered (see [05-memory-model
 and per-agent. Memory informs future decisions; it is not the source of truth for
 operational state.
 
-Operational state (who owns what, what status a task is in) lives in the task store,
-not in memory.
+Operational state (who owns what, what status a task is in, where a reply should be
+published) does not live in memory.
 
 ### Work Item / User Story
 
@@ -130,23 +167,33 @@ Blocked, Escalated.
 
 ## Key Relations
 
-```
+### User-originated durable work
+
+```text
 user
-  └─ interacts with → James (agent)
-                          └─ delegates via handoff → specialist agent
-                                                          └─ executes via → runtime (Claude Code / Codex / ACP)
-                                                          └─ produces → artifacts
-                                                          └─ writes to → memory
-                                                          └─ emits → events
-                                                          └─ callback → James
+  └─ sends message via → surface / channel session
+                           └─ creates / updates → request record
+                                                    └─ normalizes into → owner main
+                                                                            └─ delegates via handoff → specialist main
+                                                                                                           └─ executes via runtime
+                                                                                                           └─ produces artifacts
+                                                                                                           └─ emits events
+                                                                                                           └─ callback → owner main
+                                                                            └─ decides reply
+                                                                            └─ instructs surface publish
+                                                                                 └─ publish outcome → request record
 ```
 
-```
-work item (US)
-  └─ contains → tasks
-  └─ tracked by → Mission Control (source of truth for workflow state)
-  └─ produces → artifacts
-  └─ owned by → agent
+### Development workflow
+
+```text
+request record
+  └─ may create / reference → flow / US
+                                └─ contains → tasks
+                                └─ tracked by → Mission Control
+                                └─ produces → artifacts
+                                └─ returns callback → owner main
+                                └─ final human reply tracked on → request record
 ```
 
 ## Agent vs Runtime
@@ -168,11 +215,19 @@ to the owner, not an independent domain owner.
 
 | What | Source of Truth |
 |------|----------------|
-| Task status and ownership | Task store (Mission Control for dev flow) |
-| Execution history | Event log |
+| Request routing + publication state | Request store |
+| Task status and execution ownership | Task store (Mission Control for dev flow) |
+| Workflow state in dev flow | Mission Control |
+| Execution history / chronology | Event log |
 | Agent knowledge | Memory store |
 | Work results | Artifact store |
-| Workflow state in dev flow | Mission Control |
+
+### Practical split
+
+- **Request store** answers: who owns the request strategically, where should the human-visible reply go, was it published successfully?
+- **Task / flow systems** answer: what work is currently in progress, who owns that execution work, what is the current task/US status?
+- **Event log** answers: what happened, in what order, and why?
+- **Memory** answers: what should the agent remember for future work?
 
 Memory must never be the source of truth for operational state.
 Event history is the source of truth for what happened, not for what the current state is.

@@ -2,14 +2,20 @@
 
 ## Design Principle
 
-The system must be inspectable end to end. An operator must be able to answer without
-digging through session chaos:
+The system must be inspectable end to end.
 
-- Who owns this task right now?
-- What happened and in what order?
-- Where did this flow get stuck?
-- What did the agent know when it made this decision?
-- Can I replay this run and understand why it produced this output?
+An operator must be able to answer without digging through transcript chaos:
+- Who owns this request strategically right now?
+- Who owns the execution work right now?
+- Has the work finished?
+- Has the human-visible reply actually been published?
+- If not, what failed and who owns recovery?
+
+Doc 12 integration adds one important observability requirement:
+
+> **Operators must be able to distinguish task success, callback success, and reply publication success.**
+
+---
 
 ## Minimum Required Instrumentation
 
@@ -17,95 +23,175 @@ Every event must carry:
 
 | Field | Purpose |
 |-------|---------|
-| `correlation_id` | Groups all events in one logical flow or request |
+| `correlation_id` | Groups all events in one logical execution lineage |
 | `causation_id` | Points to the event that caused this event |
-| `dedup_key` | Enables idempotent processing and safe re-delivery |
+| `dedup_key` | Enables idempotent processing and safe redelivery |
 | `event_type` | Structured type identifier |
 | `timestamp` | When this event was emitted |
-| `actor` | Which agent or runtime produced this event |
-| `task_ref` | Associated task or flow, if applicable |
+| `actor` | Which agent, runtime, or adapter produced this event |
 | `version` | Event schema version |
+
+For user-originated durable work, the system must also preserve:
+- `request_id`
+- origin session / surface context
+- current reply target / reply session key (or request-state pointer)
+- publication-state changes over time
+
+---
 
 ## Per-Run Observability Requirements
 
-For every run (task, flow, or session), the system must be able to reconstruct:
+For every relevant run (request, task, flow, or session), the system must be able to reconstruct:
 
 | View | What it shows |
 |------|--------------|
-| **Timeline** | Ordered sequence of events for this run |
-| **Tool call ledger** | Every tool invocation: what was called, when, with what inputs, and what was returned |
-| **Memory write ledger** | Every write to agent memory: what was written, why, and from which event |
-| **Prompt / context snapshot** | What the agent was given as input at each significant decision point |
-| **Status history** | Ordered list of status transitions for the task or US |
+| **Request timeline** | Ordered request-routing/publication events |
+| **Flow / task timeline** | Ordered execution events and status transitions |
+| **Tool call ledger** | What tools were called, when, with what inputs, and what they returned |
+| **Memory write ledger** | What memory was written, why, and from which event |
+| **Prompt / context snapshot** | What the agent was given at each significant decision point |
 | **Artifact lineage** | Which artifacts were produced, from which tasks, and where they were used |
-| **Policy / version lineage** | Which prompt version, skill version, or routing rule was active |
+| **Policy / version lineage** | Which prompt / skill / routing version was active |
+
+---
 
 ## Source-of-Truth Model
 
 | What | Source of Truth | Query Path |
 |------|----------------|-----------|
-| Current task status and owner | Task store / Mission Control | Direct query |
-| What happened (events) | Event log | Timeline query by `correlation_id` |
-| Agent knowledge at time T | Memory store (timestamped) | Memory read at version |
-| Work results | Artifact store | Artifact query by task or flow ref |
-| Workflow state in dev flow | Mission Control | MC query |
+| Current request routing/publication state | request store | query by `request_id` |
+| Current task status and execution owner | task store / Mission Control | direct query |
+| What happened (chronology) | event log | timeline query by `correlation_id` and/or `request_id` |
+| Agent knowledge at time T | memory store (timestamped) | versioned memory read |
+| Work results | artifact store | artifact query by task or flow ref |
 
-Event history is the source of truth for what happened. It is immutable and append-only.
-Memory is not a substitute for the event log when reconstructing what occurred.
+Event history is the source of truth for what happened.
+The request record is the source of truth for request routing/publication state.
+Memory is not a substitute for either.
+
+---
+
+## Required Operator Views
+
+### 1. Request view
+
+For any `request_id`, an operator must be able to see:
+- strategic owner
+- origin session / surface
+- request class
+- current reply target
+- reply target history
+- current reply publication state
+- publication attempts and outcomes
+- fallback history
+- linked task/flow references
+
+### 2. Task / flow view
+
+For any task or flow, an operator must be able to see:
+- current execution owner
+- status and status history
+- last event
+- callback target
+- linked request if applicable
+
+### 3. Joined operator view
+
+The operator should be able to see, in one joined view:
+- request state
+- task/flow state
+- callback state
+- publication state
+- links between `request_id` and `correlation_id`
+
+This is the minimum necessary to debug “work is done but the human never got the answer”.
+
+---
 
 ## Replay and Debug Path
 
 The system must support:
 
-**Replay:** Given a `correlation_id`, reproduce the sequence of events and agent inputs
-that led to an outcome. Replay does not re-execute side effects — it reconstructs the
-decision context.
+### Replay
+Given a `request_id` and/or `correlation_id`, reconstruct:
+- the ordered event sequence
+- the request routing/publication context
+- the agent inputs used for key decisions
+- the task / flow transitions
 
-**Debug path:** For any failed run, an operator must be able to:
-1. Find the last known good state (last successful event)
-2. Identify the point of failure (first anomalous or missing event)
-3. Read the agent's input context at that point
-4. Determine which recovery path was triggered
+Replay does not re-execute side effects. It reconstructs decision context.
 
-Replay must not require reading session transcripts. It must work from structured events.
+### Debug path
+For any failed or ambiguous run, an operator must be able to:
+1. find the last known good state
+2. identify the first anomalous or missing event
+3. inspect request state, task state, and publication state at that point
+4. see which recovery path was triggered
+5. decide whether retry, fallback, reconciliation, or escalation is appropriate
+
+Replay must not require reading session transcripts to understand the durable state.
+
+---
+
+## Correlation and Request Identity
+
+`correlation_id` and `request_id` serve different purposes and must both be visible.
+
+| Identifier | Meaning |
+|-----------|---------|
+| `request_id` | Durable identity of the user-originated request |
+| `correlation_id` | Logical execution lineage / event tree |
+
+### Practical rule
+
+Operators must be able to:
+- search by `request_id`
+- search by `correlation_id`
+- move from one to the other quickly
+
+Do not force operators to guess which identifier matters in a given failure.
+
+---
 
 ## Structured Events
 
 Events are not log lines. They are structured records with defined schemas.
 
-Event categories (see [reference/canonical-events.md](reference/canonical-events.md)):
-- **Lifecycle events:** task-created, task-accepted, task-completed, task-blocked, task-escalated
-- **Handoff events:** handoff-dispatched, handoff-accepted, handoff-rejected, handoff-claimed
-- **Artifact events:** artifact-produced, artifact-validated, artifact-referenced
-- **Memory events:** memory-write, memory-correction, memory-retraction
-- **Execution events:** tool-called, tool-returned, execution-started, execution-timeout
-- **Flow events:** flow-started, flow-completed, flow-escalated, review-loop-incremented
+Important categories include:
+- request / routing / publication events
+- lifecycle events
+- handoff events
+- callback events
+- artifact events
+- execution events
+- memory events
+- flow events
 
-## Correlation and Causation
+See [reference/canonical-events.md](reference/canonical-events.md).
 
-Every flow produces a tree of events linked by `correlation_id` and `causation_id`.
-
-```
-user-request (correlation_id: req-001)
-  └─ james-creates-task (causation_id: req-001)
-       └─ handoff-dispatched (causation_id: james-creates-task)
-            └─ handoff-accepted (causation_id: handoff-dispatched)
-                 └─ task-in-progress (causation_id: handoff-accepted)
-                      └─ artifact-produced (causation_id: task-in-progress)
-                           └─ callback-sent (causation_id: artifact-produced)
-```
-
-This tree enables:
-- full causal reconstruction of any outcome
-- identification of the exact event that triggered a failure
-- replay from any node in the tree
+---
 
 ## Operator UX Requirements
 
 At minimum, an operator must be able to:
-- list all tasks and flows currently in a non-terminal state
-- for any task: see owner, status, age, and last event
-- for any flow: see the full event timeline
+- list all requests currently in a non-terminal publication/routing state
+- list all tasks / flows currently in a non-terminal execution state
+- for any request: see owner, reply target, publication state, age, and last request event
+- for any task: see owner, status, age, and last task event
 - for any failure: see the recovery action taken and its outcome
-- search by `correlation_id`, task reference, agent, or artifact reference
-- trigger a manual status override with a reason (audit trail preserved)
+- search by `request_id`, `correlation_id`, task reference, agent, or artifact reference
+- trigger a manual override / reconciliation decision with a reason (audit trail preserved)
+
+---
+
+## Required Operator Scenarios
+
+The system should support direct inspection of scenarios such as:
+- work done but reply unpublished
+- reply published but callback chain incomplete
+- request waiting on fallback authorization
+- cross-surface follow-up linked to prior request
+- late callback after reassignment
+- ambiguous publish after retry
+
+If the runtime cannot answer those cleanly, observability is still incomplete.

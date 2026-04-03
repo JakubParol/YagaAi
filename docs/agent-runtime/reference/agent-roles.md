@@ -2,27 +2,32 @@
 
 ## James
 
-**Role:** Main agent; user interaction, continuity, delegation, coordination
+**Role:** Main / strategic owner; user interaction, continuity, delegation, coordination
 
 **Final accountability:** Toward the user for all outcomes
 
 **Owns:**
-- The strategic conversation with the user
-- Delegation decisions (which specialist gets which task)
-- Final outcome review before returning to the user
-- Escalation resolution
-- Approval of behavior and platform changes
+- the strategic conversation with the user
+- request continuity and merge / transfer decisions
+- delegation decisions (which specialist gets which task)
+- final outcome review before returning to the user
+- escalation resolution
+- approval of behavior and platform changes
 
 **Does not own:**
-- Implementation execution (Naomi)
-- Research execution (Alex)
-- Quality gates (Amos)
+- implementation execution (Naomi)
+- research execution (Alex)
+- quality gates (Amos)
+- concrete transport publish mechanics inside channel adapters
 
-**Receives callbacks from:** All specialist agents
+**Routing clarification:**
+- James channel sessions are surface adapters
+- `agent:main:main` is James' owner-facing coordination endpoint for durable work
+- James remains the durable strategic owner; the main session key is not itself the durable owner
 
-**May escalate to:** Operator (human)
-
-**Execution mode:** Primarily session-bound for user interactions; delegates detached tasks to specialists
+**Execution mode:**
+- session-bound for trivial same-turn replies when appropriate
+- durable coordination through `agent:main:main` for delegated / non-trivial work
 
 ---
 
@@ -33,22 +38,25 @@
 **Execution ownership:** Implementation tasks and user stories in the dev flow
 
 **Owns:**
-- Implementation of user stories and development tasks
-- Task decomposition and planning under a US
-- Dev-domain memory and implementation patterns
-- Execution quality within her domain
-- Self-improvement proposals for implementation workflows
+- implementation of user stories and development tasks
+- task decomposition and planning under a US
+- dev-domain memory and implementation patterns
+- execution quality within her domain
+- self-improvement proposals for implementation workflows
 
 **Does not own:**
-- Code review or verify decisions (Amos)
-- Research tasks (Alex)
-- Strategic direction (James)
+- code review or verify decisions (Amos)
+- research tasks (Alex)
+- strategic direction (James)
+- durable human reply routing / publication state
+
+**Primary coordination endpoint:** `agent:naomi:main`
 
 **Primary runtime:** Claude Code, Codex, or ACP for code execution
 
-**Reports to / callbacks to:** James (on US completion or escalation)
+**Reports to / callbacks to:** James main on terminal outcomes or escalations
 
-**Receives from:** James (US assignment), Amos (code review comments, verify failures)
+**Receives from:** James main (assignment), Amos / MC (review comments, verify failures)
 
 ---
 
@@ -56,23 +64,26 @@
 
 **Role:** Senior QA; review, verify, quality escalation
 
-**Execution ownership:** Code review and functional verification of all development work
+**Execution ownership:** Code review and functional verification of development work
 
 **Owns:**
-- Code review decisions (approve / return with comments)
-- Verify decisions (pass / fail)
-- Quality escalation to James when loops exceed limits
-- Review and verify memory: patterns of quality issues
+- code review decisions
+- verify decisions
+- quality escalation to James when loops exceed limits
+- QA-domain memory and quality patterns
 
 **Does not own:**
-- Implementation fixes (those go back to Naomi)
-- Strategic decisions on scope or cancellation (James)
+- implementation fixes (those go back to Naomi)
+- strategic decisions on scope or cancellation (James)
+- durable human reply routing / publication state
 
-**Triggers escalation when:** Code review loop exceeds 3 cycles; verify loop does not converge
+**Primary coordination endpoint:** `agent:amos:main`
 
-**Reports to / callbacks to:** James (on US Done or escalation), Naomi (on return with comments)
+**Reports to / callbacks to:**
+- Naomi main on loop returns with comments/failures
+- James main on terminal outcomes or escalation
 
-**Receives from:** Naomi (US at Code Review), MC (review loop events)
+**Receives from:** Naomi main / MC
 
 ---
 
@@ -83,17 +94,20 @@
 **Execution ownership:** Research tasks delegated by James
 
 **Owns:**
-- Research execution and synthesis
-- Research-domain memory: sources, methodologies, prior findings
-- Result artifacts: research reports and synthesis documents
+- research execution and synthesis
+- research-domain memory
+- research result artifacts
 
 **Does not own:**
-- Strategic direction of the research question (James)
-- Implementation of findings (Naomi)
+- strategic direction of the research question (James)
+- implementation of findings (Naomi)
+- durable human reply routing / publication state
 
-**Reports to / callbacks to:** James (always; research results return to James)
+**Primary coordination endpoint:** `agent:alex:main`
 
-**Receives from:** James (research task handoff)
+**Reports to / callbacks to:** James main
+
+**Receives from:** James main
 
 ---
 
@@ -101,10 +115,12 @@
 
 | Aspect | James | Naomi | Amos | Alex |
 |--------|-------|-------|------|------|
-| User-facing | Yes | No | No | No |
+| User-facing | Yes, via surface adapters | No | No | No |
 | Final accountability | Yes | No | No | No |
-| Execution ownership | Delegation | Implementation | Quality | Research |
-| Escalation authority | Yes (resolves) | No (escalates to James) | Yes (triggers) | No |
-| Self-improvement scope | Platform + behavior | Dev behavior | QA behavior | Research behavior |
+| Strategic ownership of requests | Yes (usually) | No | No | No |
+| Execution ownership | Delegation / coordination | Implementation | Quality | Research |
+| Escalation authority | Yes (resolves) | No (escalates) | Yes (triggers) | No |
+| Owns reply publication truth | Yes, via request path | No | No | No |
+| Primary coordination endpoint | `agent:main:main` | `agent:naomi:main` | `agent:amos:main` | `agent:alex:main` |
 | Primary runtime | — | Claude Code / Codex / ACP | — | — |
-| Memory domain | Coordination, delegation | Implementation patterns | Quality patterns | Research knowledge |
+| Memory domain | Coordination, delegation, continuity | Implementation patterns | Quality patterns | Research knowledge |

@@ -4,20 +4,17 @@
 
 We are building an opinionated multi-agent runtime: a workflow-first control plane
 for agent work that is more predictable, operationally lighter, and better aligned
-with owner-first work than today's heavy agent frameworks.
+with owner-first work than heavy agent frameworks.
 
-The problem is not that there are no agents on the market. The problem is that existing
-systems are too heavy, too opaque, and too poorly shaped for durable agents, reliable
-handoffs, disciplined memory, and strong observability.
-
-This system should be closer to a **distributed workflow engine for agents** than to
-a general-purpose agent framework.
+The system is closer to a **distributed workflow engine for agents** than to a
+general-purpose agent framework.
 
 ## Target Workload
 
 The system is designed for:
 - owner-first work with durable agent identities
-- asynchronous tasks with callbacks
+- user-originated requests that may arrive through multiple surfaces
+- asynchronous tasks with explicit callbacks
 - multi-agent handoffs across orchestration, execution, review, and research
 - workflows that require auditability, replay, recovery, and memory continuity
 
@@ -33,39 +30,57 @@ Four agents collaborate on development and research:
 
 | Agent | Role | Primary responsibility |
 |-------|------|----------------------|
-| **James** | Main agent | User interaction, continuity, delegation, coordination |
+| **James** | Main / strategic owner | User interaction, continuity, delegation, coordination |
 | **Naomi** | Senior developer | Implementation, dev memory, self-improvement |
 | **Amos** | Senior QA | Review, verify, quality escalation |
 | **Alex** | Senior researcher | Research, synthesis, return to James |
 
-The standard interaction pattern is:
+## Surface Ingress Path vs Durable Coordination Path
 
-```
-user → James → specialist agent → callback → James → user
+The old compressed model:
+
+```text
+user → James → specialist → callback → James → user
 ```
 
-James owns the strategic conversation and final outcome toward the user.
-Each specialist owns their domain: Alex owns research tasks, Naomi owns implementation
-tasks, Amos owns quality and review.
+is directionally useful but incomplete.
+
+The actual v1 baseline for durable user-originated work is:
+
+```text
+surface session → owner main
+owner main → specialist main → owner main → publish-capable surface
+```
+
+### Practical meaning
+
+- surface/channel sessions are ingress/egress adapters
+- durable coordination happens through the owning agent’s `main` endpoint
+- specialist delegation is owner-to-owner (`main` to `main`)
+- final human-visible replies are routed via stored reply-target metadata
 
 ## Owner-First Model
 
-Every task has an explicit owner. Ownership is not inferred from chat context.
+Every important unit of work has an explicit owner.
+Ownership is not inferred from chat context.
 
-An agent is the durable owner of decisions, memory, and responsibility within their domain.
-The runtime (Claude Code, Codex, ACP, or similar) is an execution tool subordinate to
-that owner.
+The runtime keeps these concerns separate:
+- **strategic owner** — accountable for the request as a whole
+- **execution owner** — accountable for delegated work
+- **callback target** — where execution results return
+- **reply target** — where the human-visible reply should be published
 
 This means:
 - ownership survives session boundaries
-- accountability is traceable end-to-end
+- accountability is traceable end to end
 - delegation is explicit, not implicit from conversation flow
-- the operator can always answer: who owns this, what is its status, where should the result return
+- channel transcripts are not the recovery mechanism
 
 ## Architectural Thesis
 
 The core value comes from combining:
 - separated agents with their own memory and responsibility
+- explicit request routing and reply publication state
 - simple and reliable agent-to-agent communication
 - event-centric orchestration
 - controlled self-improvement
@@ -75,9 +90,12 @@ The core value comes from combining:
 ## System Boundary
 
 The runtime is responsible for:
+- receiving surface-originated requests
+- normalizing durable work into owner-facing coordination endpoints
 - routing commands and events
 - task lifecycle
 - ownership and callback handling
+- explicit reply-target and publication state
 - per-agent memory
 - audit, replay, and debugging
 - controlled improvement loops
@@ -87,5 +105,21 @@ The runtime does not try to be (at start):
 - a full enterprise scheduler
 - an integration marketplace
 - a complete IDE host
-- an autonomous system that rebuilds agent topology on its own
+- an autonomous system that rebuilds topology on its own
 - a general framework for everything
+
+## Mental Model to Preserve
+
+For durable work, the right mental model is:
+
+```text
+human message arrives on a surface
+  → request becomes durable
+  → owner main coordinates
+  → specialists execute
+  → execution callback returns to owner
+  → owner decides response
+  → surface publishes response
+```
+
+This is the baseline that the rest of the docs now formalize.

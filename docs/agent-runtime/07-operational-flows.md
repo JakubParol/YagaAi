@@ -2,167 +2,171 @@
 
 ## Common Invariants
 
-These apply to all flows:
+These apply to all durable flows:
 
+- Surface/channel sessions are ingress/egress adapters, not durable owners
+- Durable user-originated work normalizes through the strategic owner’s `main` endpoint
 - Every task has an explicit owner, requester, and callback target before work begins
-- Handoffs are not complete until accepted, rejected, or claimed
+- Handoffs are not complete until accepted or rejected
 - Artifacts are the mechanism for passing work results between agents
-- Callbacks are mandatory for detached tasks; fire-and-forget is not acceptable
-- Status transitions are explicit and event-driven
+- Callbacks are mandatory for detached tasks
+- Task completion and human reply publication are separate observable steps
 - Escalation to James is the terminal path when a loop does not converge
 
 ---
 
-## Research Flow
+## Research Flow (User-Originated)
 
 **Goal:** Produce a research artifact answering a user's question or hypothesis.
 
-**Trigger:** User asks James for research.
+**Trigger:** User asks James for research through a surface/channel session.
 
-**Participants:** User, James, Alex
+**Participants:** User, James surface session, James main, Alex main
 
-**Source of truth:** Task store (task owned by Alex)
+**Source of truth:**
+- request routing/publication state → request record
+- execution state → task store
 
-**Main steps:**
-1. User sends research request to James
-2. James creates a task and sends a handoff to Alex
-3. Alex accepts the task
-4. Alex performs research, stores relevant findings in memory
-5. Alex produces a result artifact (report, synthesis, references)
-6. Alex sends a callback to James with the artifact reference
-7. James reviews the artifact
-8. James may send a clarification handoff back to Alex (additional research sub-task)
-9. James returns the final answer to the user
+### Main steps
+1. User sends research request on a surface session.
+2. The surface adapter creates/updates the request record and normalizes the request into `agent:main:main`.
+3. James main decides the work is durable and delegates to `agent:alex:main`.
+4. Alex accepts the handoff and performs research.
+5. Alex produces a result artifact (report, synthesis, references).
+6. Alex sends a callback to `agent:main:main` with the artifact reference.
+7. James main reviews the artifact and decides the user-facing answer.
+8. James main instructs the original surface path to publish the reply using the stored reply target.
+9. The surface adapter publishes the reply and reports the outcome back to request state.
 
-**State transitions:**
-```
+### State shape
+
+```text
+request: received → normalized → delegated → awaiting_callback → reply_publish_pending → reply_published
+
 task: Created → Accepted (Alex) → In Progress → Done
 ```
 
-**Artifacts:** Research report or synthesis document
+### Callback path
+Alex main → James main
 
-**Callback path:** Alex → James (callback event with artifact reference)
+### Human reply path
+James main → stored reply target → publish-capable surface session
 
-**Escalation path:** If Alex is blocked (source unavailable, ambiguous scope), Alex
-sends a blocked event to James with a reason. James clarifies scope or cancels.
-
----
-
-## Implementation Flow
-
-**Goal:** Implement a development task or user story.
-
-**Trigger:** User asks James for a development task, or James assigns a US to Naomi.
-
-**Participants:** User, James, Naomi, Amos (via QA flow)
-
-**Source of truth:** Mission Control (for US and task state)
-
-**Main steps:**
-1. User requests a development task from James
-2. James creates or identifies a US in Mission Control
-3. James assigns the US to Naomi via handoff
-4. Naomi accepts the US and sets it to `In Progress`
-5. Naomi analyzes the US, creates a plan, stores tasks in MC
-6. Naomi works through tasks using an execution runtime (Claude Code, Codex, ACP)
-7. Naomi records execution trail and strengthens memory around her specialization
-8. When all tasks are done, Naomi submits the US to `Code Review` and assigns Amos
-9. James is notified via callback event
-
-**State transitions:**
-```
-US: Created → In Progress (Naomi) → Code Review (Amos assigned) → [QA flow]
-Tasks: Created → In Progress → Done (per task)
-```
-
-**Artifacts:** Code changes (PR or diff reference), execution log, implementation notes
-
-**Callback path:** Naomi → James (after submission to Code Review)
-
-**Escalation path:** If Naomi is blocked, she sets the task to `Blocked` with a reason.
-James is notified. James resolves or changes scope.
+### Escalation path
+If Alex is blocked, Alex sends a blocked event to James main.
+If publication fails after research succeeds, the request remains operationally open until retry,
+fallback, or abandonment is resolved.
 
 ---
 
-## QA Flow
+## Implementation Flow (User-Originated)
 
-**Goal:** Review and verify work produced by Naomi before it is accepted as Done.
+**Goal:** Implement a development task or user story and return a human-visible outcome.
 
-**Trigger:** Naomi submits a US to Code Review, assigned to Amos.
+**Trigger:** User asks James for implementation help through a surface/channel session.
 
-**Participants:** Naomi, Amos, James (on escalation)
+**Participants:** User, James surface session, James main, Naomi main, Amos main, Mission Control
 
-**Source of truth:** Mission Control
+**Source of truth:**
+- request routing/publication state → request record
+- US/task execution state → Mission Control
 
-**Main steps:**
+### Main steps
+1. User sends implementation request on a surface session.
+2. The surface adapter creates/updates the request record and normalizes the work into `agent:main:main`.
+3. James main creates or identifies the relevant US and delegates implementation to `agent:naomi:main`.
+4. Naomi accepts, plans, and executes the work.
+5. Naomi drives task execution through Mission Control and code-execution runtime(s).
+6. When implementation reaches the review point, Naomi submits to Code Review / Verify flow.
+7. Terminal execution callbacks return to James main (directly or through MC-triggered terminal events).
+8. James main decides the human-visible response.
+9. James main instructs the original surface path to publish the response using the stored reply target.
+10. Publish outcome is written back into request state.
 
-### Code Review Loop
+### State shape
 
-1. Amos receives the US in `Code Review` state
-2. Amos performs code review against the definition of done
-3. If approved: Amos moves the US to `Verify`
-4. If comments: Amos adds comments, moves US back to `In Progress`, reassigns Naomi
-5. Naomi fixes comments and resubmits to `Code Review`
-6. Loop repeats up to **3 cycles**
-7. If not resolved after 3 cycles: escalate to James
+```text
+request: received → normalized → delegated → awaiting_callback → reply_publish_pending → reply_published
 
-### Verify Loop
-
-1. Amos receives the US in `Verify` state
-2. Amos performs functional verification
-3. If passed: Amos moves the US to `Done`; callback sent to James
-4. If failed: Amos records comments, moves US back to `In Progress`, reassigns Naomi
-5. Naomi fixes the issues and returns to review or verify as appropriate
-6. If the verify loop does not converge: escalate to James
-
-**State transitions:**
-```
-Code Review loop:
-  Code Review (Amos) → In Progress (Naomi) → Code Review (Amos) [max 3x]
-  Code Review (Amos) → Verify (Amos) [on approval]
-
-Verify loop:
-  Verify (Amos) → In Progress (Naomi) → Review/Verify (Amos) [until resolved]
-  Verify (Amos) → Done [on pass]
+US: Created → In Progress → Code Review → Verify → Done
+Tasks: Created → Accepted → In Progress → Done (or Blocked / Escalated)
 ```
 
-**Artifacts:** Review comments, verify evidence, approval record
+### Callback path
+- Naomi / MC terminal events → James main
+- Amos / MC escalation events → James main
 
-**Callback path (dual callback pattern):**
-- Amos → Naomi: when returning with comments (`In Progress`, reassign Naomi)
-- Amos → James: when the US reaches `Done` OR when escalation is triggered
+### Human reply path
+James main → stored reply target → publish-capable surface session
 
-These are two distinct callbacks. Naomi is the operational callback target for
-loop returns. James is the strategic callback target for terminal outcomes.
+### Escalation path
+- Naomi blocked → James main notified
+- review / verify loop exceeded → James main notified
+- publish failure after successful implementation → request remains open until resolved
 
-**Escalation path:** After 3 code review cycles (`review_loop.limit_reached`) or
-after 2 verify failures (`verify_loop.limit_reached`), MC emits an escalation event.
-James receives it and decides: scope change, cancellation, or direct resolution.
+---
+
+## QA Flow (Nested Inside Implementation)
+
+**Goal:** Review and verify work produced by Naomi before the implementation flow is treated as execution-complete.
+
+**Trigger:** Naomi submits a US to Code Review.
+
+**Participants:** Naomi main, Amos main, Mission Control, James main (on terminal events)
+
+**Source of truth:** Mission Control for US/task workflow state
+
+### Code Review loop
+1. Amos receives the US in `Code Review`.
+2. Amos reviews against definition of done.
+3. If approved: Amos / MC move the US to `Verify`.
+4. If comments: Amos returns it to `In Progress`; Naomi receives loop-return callback.
+5. Loop repeats up to the configured limit.
+6. If the loop limit is exceeded: escalate to James main.
+
+### Verify loop
+1. Amos receives the US in `Verify`.
+2. Amos performs functional verification.
+3. If passed: MC moves the US to `Done` and terminal completion becomes visible to James main.
+4. If failed: MC returns the US to `In Progress`; Naomi receives loop-return callback.
+5. If verify does not converge: escalate to James main.
+
+### Dual callback pattern
+- Amos / MC → Naomi: loop returns with comments / failures
+- Amos / MC → James: terminal `Done` or escalation
+
+This is execution callback routing. Human reply publication still happens later through the request record.
 
 ---
 
 ## Development Flow Through Mission Control (Integrated View)
 
-**Goal:** End-to-end view of a US moving from assignment to Done.
-
-```
-James assigns US to Naomi
+```text
+surface session receives user request
+  ↓
+request normalized into James main
+  ↓
+James assigns US to Naomi main
   ↓
 Naomi: In Progress
-  ↓ (creates tasks, works through them)
-Naomi: submits to Code Review → assigns Amos
+  ↓
+Naomi submits to Code Review
   ↓
 Amos: Code Review
-  ↓ (approved)
-Amos: Verify
-  ↓ (passed)
-US: Done → callback to James
   ↓
-James: notifies user
+Amos: Verify
+  ↓
+US: Done / Escalated
+  ↓
+James main decides human-visible response
+  ↓
+publish via stored reply target
 ```
 
-At any point, the loop may cycle (Code Review → In Progress → Code Review) or escalate
-(→ Escalated → James).
+At any point:
+- review may cycle
+- verify may cycle
+- the request may remain open after execution completion if publication is unresolved
 
 ---
 
@@ -171,10 +175,10 @@ At any point, the loop may cycle (Code Review → In Progress → Code Review) o
 Each flow above follows this structure:
 - **Goal** — what the flow is trying to achieve
 - **Trigger** — what initiates it
-- **Participants** — which agents are involved
+- **Participants** — which sessions/agents are involved
 - **Source of truth** — where state is authoritative
 - **Main steps** — the nominal path
-- **State transitions** — canonical status changes
-- **Artifacts** — what is produced
-- **Callback path** — how results return
+- **State shape** — request and execution state views
+- **Callback path** — how execution results return
+- **Human reply path** — how final/intermediate answers get published
 - **Escalation path** — what happens when the nominal path fails
