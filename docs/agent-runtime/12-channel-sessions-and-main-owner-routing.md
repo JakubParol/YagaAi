@@ -1,7 +1,7 @@
 # 12 — Channel Sessions and Main-Owner Routing
 
 ## Status
-V2 draft architectural rule for the v1 baseline.
+V3 draft architectural rule for the v1 baseline.
 
 ## Purpose
 Define the mandatory routing topology for user-originated requests that enter through channel/session surfaces such as Discord, WhatsApp, Teams, or web chat.
@@ -11,7 +11,8 @@ This note exists to prevent a specific class of architectural drift:
 - specialist work being delegated surface-to-surface,
 - reply routing being inferred instead of stored,
 - ownership, memory, and callback semantics fragmenting across transport surfaces,
-- transport-specific sessions becoming accidental sources of truth.
+- transport-specific sessions becoming accidental sources of truth,
+- reply publication becoming an implicit side effect instead of an explicit tracked concern.
 
 This document is intentionally opinionated.
 It sets the default topology for surface-originated work in v1.
@@ -24,7 +25,7 @@ It sets the default topology for surface-originated work in v1.
 >
 > **Durable, delegated, or otherwise non-trivial user-originated work must be normalized through the owning agent’s `main` session.**
 >
-> **Specialist delegation happens main-to-main, never channel-to-channel, unless an explicit exception is designed and documented.**
+> **Specialist delegation happens main-to-main, never channel-to-channel, unless an explicit exception is designed, approved, and documented.**
 
 Short version:
 
@@ -47,12 +48,49 @@ The durable owner remains the **agent**.
 - default mailbox for durable routing,
 - default place where owner-level reasoning and cross-agent coordination occur.
 
+### Logical-endpoint clarification
+In v1, `agent:<id>:main` should be treated as a **logical coordination endpoint**.
+It may be implemented by one or more runtime sessions/processes as long as ownership, ordering, and audit invariants remain stable.
+It is not itself the durable state object.
+
 In other words:
 - **owner = agent**
-- **owner-facing coordination endpoint = agent’s `main` session**
+- **owner-facing coordination endpoint = agent’s `main` session key**
+- **durable state must live in durable records, not only in a live session instance**
 
 This distinction matters.
 It prevents the architecture from silently turning session identity into the true ownership model.
+
+---
+
+## What Object This Document Governs
+
+This document governs the routing topology of a **user-originated request record**.
+
+### Request record
+A **request** in this document is the ingress-scoped durable record for a user-originated unit of work.
+It carries:
+- request identity,
+- ownership/routing metadata,
+- callback metadata,
+- reply-target metadata,
+- publication state sufficient for retry/recovery.
+
+### What request is not
+A request is **not** a replacement for:
+- `task`,
+- `flow`,
+- `handoff`,
+- `event`,
+- `artifact`.
+
+Instead:
+- a request may **create** or **reference** tasks, flows, and handoffs,
+- a request may become the ingress/root context from which later work emerges,
+- request-level routing/publication state may live alongside task/flow state rather than replacing it.
+
+This document therefore does **not** introduce a second orchestration model on purpose.
+It defines the request-level routing and reply-publication topology around user-originated work.
 
 ---
 
@@ -86,8 +124,13 @@ The specialist agent currently accountable for delegated execution work.
 For example Naomi for implementation, Amos for QA, Alex for research.
 
 ### Reply target
-The stored, explicit routing target for the human-visible reply.
-This is not the same thing as the callback target.
+The durable routing concept for the human-visible reply.
+It is metadata, not transcript luck.
+A reply target may resolve to a current publish-capable surface session, conversation, thread, or equivalent delivery endpoint.
+
+### Reply session key
+One concrete publish-capable endpoint that may currently satisfy the reply target.
+It is a delivery mechanism, not the full durable routing concept.
 
 ### Callback target
 The stored, explicit routing target for specialist completion or execution results.
@@ -95,7 +138,7 @@ This is usually the delegating owner’s `main` session.
 
 ### Surface session
 A presentation-capable session that can publish to the original human-facing surface.
-A reply target often points to a surface session, but the reply target is metadata, not just transcript context.
+A reply target often resolves to a surface session, but the reply target is broader than a literal session key.
 
 ---
 
@@ -151,7 +194,7 @@ A channel session does **not** exist to:
 ### Rule 2 — Durable coordination normalizes through `main`
 For durable, delegated, or non-trivial user-originated work:
 - the owning agent remains the durable owner,
-- the agent’s `main` session is the canonical coordination endpoint,
+- the agent’s `main` session key is the canonical coordination endpoint,
 - the ingress channel session is not the durable owner.
 
 For James, this normally means:
@@ -194,7 +237,7 @@ Example:
 - James
 
 ### 2. Owner-facing coordination endpoint
-The strategic owner’s canonical `main` session.
+The strategic owner’s canonical `main` session key.
 
 Example:
 - `agent:main:main`
@@ -238,6 +281,7 @@ Minimum metadata should include:
 - `dedup_key`
 - `request_class`
 - `origin_session_key`
+- `reply_target`
 - `reply_session_key`
 - `origin_surface`
 - `origin_conversation_id`
@@ -263,11 +307,12 @@ The handoff should include:
 - `causation_id`
 - `callback_target = agent:main:main`
 - reply metadata needed later by James, including:
+  - `reply_target`
   - `reply_session_key`
   - `origin_surface`
   - `origin_conversation_id`
   - `origin_message_id` where available
-  - `reply_target_version` if used
+  - `reply_target_version`
 
 #### Step 3 — Main Naomi owns specialist execution
 `agent:naomi:main`
@@ -294,20 +339,28 @@ Naomi answers the delegating owner.
 
 ---
 
-## Authoritative Records
+## Source-of-Truth Model
 
 This rule requires a clear source-of-truth model.
 
-### Authoritative by default
-For durable or delegated work, the authoritative records should be durable and queryable.
-At minimum, the system should have durable records for:
+### Authoritative records
+For durable or delegated work, the following should be durable and queryable:
 - request identity,
-- current strategic owner,
-- current execution owner if any,
+- strategic owner,
+- execution owner if any,
 - callback target,
 - reply target,
-- publication status,
-- relevant event history.
+- reply publication state,
+- relevant event chronology.
+
+### Practical mapping
+At the architectural level, the intended split is:
+- **request routing + reply publication state** -> durable request record or equivalent durable projection,
+- **task / flow work state** -> task/flow system of record,
+- **chronological evidence** -> event log / structured audit stream,
+- **surface transcripts** -> non-authoritative presentation trace.
+
+This document does not force one storage implementation, but it does require that the split above be explicit.
 
 ### Non-authoritative by default
 The following are not sufficient as sources of truth for durable routing:
@@ -342,6 +395,18 @@ This document does not fully define the wire protocol or full state machine, but
 
 At minimum, durable normalized requests should carry enough information to answer four separate questions.
 
+### Required v1 fields
+These should be treated as required for durable/delegated requests in v1:
+- `request_id`
+- `correlation_id`
+- `dedup_key`
+- `request_class`
+- `contract_version`
+- `strategic_owner_agent_id`
+- `callback_target`
+- `reply_target`
+- `reply_publish_status`
+
 ### A. What request is this?
 Identity fields:
 - `request_id`
@@ -361,18 +426,20 @@ Operational ownership fields:
 ### C. Where should the human-visible reply go?
 Reply-routing fields:
 - `origin_session_key`
+- `reply_target`
 - `reply_session_key`
 - `origin_surface`
 - `origin_conversation_id`
 - `origin_message_id` where available
 - `reply_mode` if applicable
-- `reply_target_version` if applicable
+- `reply_target_version`
 - `fallback_reply_target` if applicable
 
 ### D. What is the state of publishing?
 Publication fields:
 - `reply_publish_status`
 - `reply_publish_attempt_count`
+- `publish_dedup_key`
 - `last_publish_attempt_at` if applicable
 - `last_publish_error` if applicable
 
@@ -380,13 +447,23 @@ Publication fields:
 `origin_session_key` and `reply_session_key` may often be the same, but they must not be treated as permanently identical.
 Future scenarios may require them to differ.
 
+`reply_target` and `reply_session_key` are also not identical:
+- `reply_target` is the durable routing concept,
+- `reply_session_key` is one current concrete delivery endpoint.
+
 ---
 
-## Reply Publication Lifecycle
+## Lifecycle and Canonical Events/Statuses
 
-This document does not define the full state machine, but it requires explicit separation between work completion and human-visible publication.
+This document does **not** define a separate shadow state machine.
+The request-level lifecycle described here must map onto the runtime’s canonical events and statuses defined elsewhere.
 
-A practical v1 lifecycle may include:
+The labels in this document are therefore:
+- routing-oriented projection labels,
+- not permission to invent an unrelated parallel workflow engine.
+
+### Practical request-level projection labels
+A practical v1 projection may include:
 - `inbound_received`
 - `normalized`
 - `owner_accepted`
@@ -398,12 +475,37 @@ A practical v1 lifecycle may include:
 - `fallback_required`
 - `closed`
 
+### Minimum required event hooks
+The system should emit structured events for at least:
+- request normalization attempted,
+- request normalization accepted/rejected,
+- owner handoff dispatched/accepted,
+- reply target changed,
+- reply publication attempted,
+- reply publication succeeded/failed,
+- fallback invoked.
+
 ### Required distinction
 A successful specialist callback is **not** the same thing as a successful human-visible reply publication.
 
 If specialist work succeeds but publish fails:
 - the request is not fully resolved,
-- the system must retain enough state to retry, escalate, or fall back.
+- the system must retain enough state to retry, escalate, or fall back,
+- publication failure must remain observable as a first-class concern.
+
+---
+
+## Reply Publication Rules
+
+### Publish dedup invariant
+The same reply intent must not be published more than once without an explicit idempotency or `publish_dedup_key` rule.
+
+### Publication state ownership
+Channel adapters may perform the concrete publish operation, but publication success/failure must be reported back into durable request-level state or an equivalent durable projection.
+
+### Closed-state expectation
+A request should not be treated as fully closed merely because specialist work completed.
+If the intended human-visible publish did not succeed, the request remains operationally unresolved until the publication concern is resolved or explicitly abandoned.
 
 ---
 
@@ -416,6 +518,10 @@ Reply target metadata may be updated only by:
 - the strategic owner,
 - or a channel adapter acting on explicit strategic-owner instruction.
 
+### Scope of mutation
+By default, a reply target mutation applies to the current request only.
+If the intent is to change the destination for a broader conversation or thread, that should be treated as an explicit conversation transfer rather than an implicit request-local mutation.
+
 ### Not allowed by default
 Specialist agents should not mutate human reply routing metadata as part of normal execution.
 
@@ -425,6 +531,28 @@ If reply target changes, the system should preserve enough history to explain:
 - new target,
 - who changed it,
 - why it changed.
+
+---
+
+## Fallback Policy
+
+Fallback must not be a vague escape hatch.
+
+### Default hierarchy
+If primary reply publication fails:
+1. retry against the intended reply target when safe,
+2. use an explicit `fallback_reply_target` only if policy allows it,
+3. if no valid fallback target exists, escalate to the strategic owner or operator path.
+
+### Approval rule
+Fallback should be governed by strategic-owner intent or platform policy, not by specialist discretion.
+
+### Audit rule
+When fallback is used, the system should preserve:
+- the failed primary target,
+- the fallback target used,
+- why fallback was invoked,
+- who or what authorized it.
 
 ---
 
@@ -463,6 +591,20 @@ This document does not specify every recovery algorithm, but implementations mus
 
 ---
 
+## Continuity and Follow-Up Rules
+
+The topology does not require global serialization across all work.
+However, it does require request-level and conversation-level clarity.
+
+### Default continuity rules
+- A new follow-up message should create a new request unless the strategic owner explicitly merges it into an existing one.
+- Cross-surface continuation should not silently mutate an existing reply target; it should create an explicit link or transfer decision.
+- Multiple durable requests may exist within one broader conversation scope, but each must remain uniquely identifiable and auditable.
+
+These defaults prevent ambiguous ownership and accidental cross-request mutation.
+
+---
+
 ## Controlled Exceptions
 
 The default rule is strong on purpose, but it is not meant to force hidden exceptions.
@@ -479,7 +621,12 @@ If a flow bypasses the default topology, it must be:
 - intentional,
 - documented,
 - bounded,
-- and auditable.
+- auditable,
+- and preserve explicit owner, callback, reply-target, and recovery semantics.
+
+### v1 baseline rule
+In v1, exceptions should be rare and platform-level, not ad hoc per feature.
+Ordinary feature work should not invent its own alternate routing topology.
 
 Ad hoc surface-to-surface specialist routing is not an acceptable substitute for explicit exception design.
 
@@ -549,8 +696,8 @@ The specialist result goes back to the owner that requested the work.
 The owner decides the final user-facing reply.
 
 ### Guardrail 4 — Human reply routing and callback routing are separate concepts
-A callback may target the owner’s `main` session.
-A human reply may target a channel session.
+A callback may target the owner’s `main` session key.
+A human reply may target a surface session or another publish-capable target.
 These are not interchangeable.
 
 ### Guardrail 5 — Surface variants of specialist agents are not the primary delegation topology
@@ -562,6 +709,10 @@ It should only add a new ingress/egress adapter.
 
 ### Guardrail 7 — Publish success is not implied by work success
 The system must track reply publication separately from specialist completion.
+
+### Guardrail 8 — `main` must not become a god-object
+`main` owns coordination decisions and durable routing intent.
+Low-level adapter publish execution and transport-specific delivery mechanics belong to channel/runtime layers and must report back via durable events/records.
 
 ---
 
@@ -598,12 +749,35 @@ A practical v1 shape can be:
 
 ---
 
+## Relation to Mission Control
+
+This document governs:
+- request ingress,
+- owner routing,
+- callback routing,
+- reply-target handling,
+- reply publication state.
+
+Mission Control or other workflow/task systems may govern:
+- implementation workflow state,
+- task decomposition,
+- QA workflow,
+- development execution history.
+
+The intended split is:
+- **request-level routing/publication state** remains governed by this topology,
+- **work execution state** may be governed by Mission Control or task/flow systems.
+
+The two must not compete to be the source of truth for the same concern.
+
+---
+
 ## Recommended Invariants
 
 The system should preserve these invariants:
 
 1. **Every durable or delegated request has one strategic owner agent.**
-2. **The owner agent’s `main` session is the canonical coordination endpoint for that work.**
+2. **The owner agent’s `main` session key is the canonical coordination endpoint for that work.**
 3. **Channel sessions are adapters, not durable strategic owners.**
 4. **Specialist delegation is main-to-main by default.**
 5. **Specialist completion returns to the delegating owner by default.**
@@ -612,8 +786,11 @@ The system should preserve these invariants:
 8. **Successful callback completion does not imply successful reply publication.**
 9. **Transcript inference is not a valid routing recovery strategy.**
 10. **Adding a new transport surface does not create a new ownership model.**
-11. **Exceptions to the default topology must be explicit, documented, and auditable.**
+11. **Exceptions to the default topology must be explicit, documented, bounded, and auditable.**
 12. **The durable owner remains the agent, not the session object.**
+13. **This document’s lifecycle labels must map to canonical events/statuses rather than create a shadow workflow engine.**
+14. **The same reply intent must not publish twice without an explicit idempotency rule.**
+15. **Follow-ups create new requests unless explicitly merged by the strategic owner.**
 
 ---
 
@@ -626,22 +803,33 @@ This rule covers:
 - normalization into owner-facing `main` sessions,
 - owner-to-owner delegation,
 - callback target and reply-target preservation,
+- reply publication state and fallback expectations,
 - the prohibition on default surface-to-surface specialist routing.
 
 ### What this rule does not fully define
 This note does **not** fully define:
 - the complete transport/wire protocol,
 - the full task/workflow state machine,
-- every retry policy,
+- every retry algorithm,
 - full artifact schema,
 - the general workflow DSL,
-- every system-originated event type.
+- every system-originated event type,
+- every storage implementation detail.
 
 However, it **does** require:
 - explicit durable routing metadata,
 - explicit acceptance semantics for normalization,
 - explicit separation between completion and publication,
-- explicit ownership topology.
+- explicit source-of-truth boundaries,
+- explicit ownership topology,
+- and mapping to canonical runtime events/statuses.
+
+### Important non-goals
+This document does not authorize:
+- surface-local orchestration shortcuts for durable work,
+- transcript-based routing recovery,
+- specialist-controlled reply-target mutation,
+- ad hoc per-feature alternate routing models.
 
 ---
 
@@ -649,7 +837,7 @@ However, it **does** require:
 
 If a shorter wording is needed in other docs, use this:
 
-> **User requests may enter through channel sessions, but any durable, delegated, or otherwise non-trivial work must normalize through the owning agent’s `main` session. The durable owner remains the agent; the `main` session is the canonical coordination endpoint. Specialist delegation is main-to-main. Final user-visible replies are routed back through explicit stored reply-target metadata to the appropriate surface session. Channel-to-channel specialist routing is not an allowed default pattern.**
+> **User requests may enter through channel sessions, but any durable, delegated, or otherwise non-trivial work must normalize through the owning agent’s `main` session key. The durable owner remains the agent; `main` is the canonical coordination endpoint. Specialist delegation is main-to-main. Final user-visible replies are routed back through explicit stored reply-target metadata to the appropriate publish-capable surface endpoint. Channel-to-channel specialist routing is not an allowed default pattern.**
 
 ---
 
@@ -657,8 +845,8 @@ If a shorter wording is needed in other docs, use this:
 
 If a human message enters through Discord, WhatsApp, Teams, or web chat:
 - it may enter through a channel session,
-- but durable coordination must move into the owning agent’s `main` session,
-- specialist work must flow through specialist `main` sessions by default,
+- but durable coordination must move into the owning agent’s `main` coordination path,
+- specialist work must flow through specialist `main` paths by default,
 - and the final reply must be routed back through explicit stored reply metadata.
 
 Not Discord-to-Discord.
