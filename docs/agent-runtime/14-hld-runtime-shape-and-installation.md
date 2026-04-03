@@ -1,7 +1,4 @@
-# 13 — HLD: Runtime Shape, Deployment Pattern, and Mission Control Integration
-
-## Status
-Draft HLD for the target v1/v1.5 runtime shape.
+# 14 — HLD: Runtime Shape, Deployment Pattern, and Mission Control Integration
 
 ## Purpose
 Define the preferred high-level deployment and runtime architecture for Yaga as a lightweight, local-first developer-agent system that is easy to install on Linux and macOS.
@@ -49,26 +46,22 @@ If the product promise is “simple, light, working”, the deployment shape mus
 
 ---
 
-## 2. What We Learn from OpenClaw / Hermes / Current Mission Control
+## 2. Key Design Lessons
 
-### 2.1 The Gateway pattern is not wrong
+### 2.1 A long-lived process is necessary
 
-OpenClaw and similar systems use a **Gateway** because some things really do need one long-lived process:
-
-- channel connections,
-- WebSocket control plane,
+Some things genuinely require a single long-lived process:
+- channel connections and WebSocket control plane,
 - long-lived auth state,
-- background jobs,
-- node/device connectivity,
-- and supervision of running work.
+- background jobs and watchdogs,
+- supervision of running agent work.
 
-That part is legitimate.
+That is legitimate. The runtime must own it.
 
-### 2.2 The real problem is when Gateway becomes the center of everything
+### 2.2 The failure mode is when that process becomes a god-process
 
-The bad outcome is not “a long-running process exists”.
+The bad outcome is not “a long-running process exists.”
 The bad outcome is when that process becomes:
-
 - networking layer,
 - orchestration brain,
 - transport adapter owner,
@@ -76,34 +69,20 @@ The bad outcome is when that process becomes:
 - persistence coordinator,
 - and product architecture center,
 
-all at once.
+all at once. That leads to protocol coupling and operational fragility.
 
-That leads to a god-process and protocol coupling.
+### 2.3 A heavy multi-service control plane is not the target product shape
 
-### 2.3 Current Mission Control is too heavy for the target product shape
-
-The current Mission Control repo is structurally useful, but operationally heavy for the future product shape.
-
-Observed today:
-- web app,
-- API service,
-- worker,
-- Redis,
-- Postgres,
-- Dapr placement,
-- multiple Dapr sidecars,
-- container-first DEV and PROD flows,
-- installer logic centered on Docker + systemd + Ubuntu.
-
-That is acceptable for an internal staging architecture.
+A Mission Control architecture with separate API service, worker, Redis, Postgres, Dapr sidecars,
+and container-first deployment is acceptable for staging infrastructure.
 It is **not** the right default product shape for:
 
 > `curl -fsSL https://yagaai.com/install.sh | bash`
 
-So the conclusion is not “throw away Mission Control thinking”.
+The conclusion is not “throw away Mission Control thinking.”
 The conclusion is:
 
-> **keep the domain model, simplify the runtime shape**.
+> **Keep the domain model, simplify the runtime shape.**
 
 ---
 
@@ -189,11 +168,21 @@ Responsibilities:
 - own long-running sessions and execution supervision,
 - own channel/provider adapters,
 - accept local CLI/API/UI requests,
-- persist request/task/run state,
+- persist request/task/run state and request records,
 - run retries and watchdog logic,
 - emit and consume internal events,
 - manage callbacks and publication status,
-- host or expose Mission Control read models.
+- host or expose Mission Control read models,
+- own the prompt assembly path for all agent sessions.
+
+**Agent supervision model:**
+Each named agent (James, Naomi, Amos, Alex) has a stable durable identity registered in the runtime.
+The daemon supervises agent processes/workers and is responsible for:
+- detecting crashes or unresponsive agents,
+- restarting agents within policy,
+- draining in-flight work safely before restart where possible,
+- resuming durable state from the request record and event log after restart,
+- never reconstructing routing or publication state from transcript.
 
 This is the operational heart of the system.
 
@@ -236,6 +225,16 @@ Important architectural stance:
 
 They should report events into the same runtime state model.
 
+**Mandatory routing topology:**
+Adapters are ingress/egress surfaces only — they must never become durable owners of agent logic.
+Every durable, delegated, or non-trivial user-originated request must normalize through the owning
+agent's `main` session. Specialist delegation is main-to-main. Final reply routes back through
+stored reply-target metadata.
+
+Adding a new adapter must not create a new ownership model — only a new ingress/egress adapter.
+See [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)
+for the full topology specification and invariants.
+
 ## 5.4 Agent execution subsystem (mandatory)
 
 Responsibilities:
@@ -267,7 +266,23 @@ Needs to support:
 
 This is where a lot of “A2A must be serious” becomes real.
 
-## 5.6 Mission Control module (integrated, not separate platform in default install)
+## 5.6 Prompt assembly subsystem (runtime-owned)
+
+The runtime owns the prompt assembly path for all agent sessions.
+This is not a job for the agent process alone or for an external service.
+
+The runtime is responsible for:
+- assembling the correct prompt mode (full / minimal / execution) per session type,
+- injecting cached stable layers (identity, workspace, skill index),
+- computing and injecting ephemeral turn layers (current task, retrieval results, memory recall),
+- enforcing that child/subagent sessions receive minimal prompts, not full parent context,
+- triggering memory flush before compaction,
+- exposing which prompt layers were active for a given run (prompt introspection).
+
+See [06-internal-prompt-architecture.md](06-internal-prompt-architecture.md) for the full
+prompt layering specification.
+
+## 5.7 Mission Control module (integrated, not separate platform in default install)
 
 Mission Control should become a **module inside the Yaga product architecture**, not an externally mandatory multi-service platform for local installs.
 
@@ -356,14 +371,24 @@ Why:
 - easy backup/export,
 - easy diagnostics.
 
-Use SQLite for:
-- request records,
+**Global runtime DB** (`~/.yaga/state.db`) — use SQLite for:
+- request records (source of truth for routing and `reply_publish_status`),
 - task/run state,
-- event log,
-- retry queue,
-- watchdog schedule,
+- event log (append-only, dedup by `dedup_key`, replayable),
+- retry queue and watchdog schedule,
 - Mission Control planning/read-model state,
-- maybe some metadata for memory indexes.
+- agent memory records, memory embeddings (via sqlite-vec), memory FTS indexes (via FTS5).
+
+**Per-project index DBs** (`~/.yaga/projects/<project-id>/index.db`) — separate SQLite files for:
+- codebase chunks and chunk embeddings,
+- symbol metadata and repo map,
+- dirty queues and index repair state.
+
+Keeping per-project index DBs separate from the global runtime DB improves isolation,
+simplifies rebuilds, and limits corruption blast radius.
+
+See [07-memory-model-and-vectorization.md](07-memory-model-and-vectorization.md) for the full
+memory and vectorization storage model.
 
 ### Optional later upgrade path
 For heavier team/server deployment:
@@ -530,25 +555,6 @@ This means:
 That is a much healthier center of gravity.
 
 ---
-
-## 10.5 Vectorization and memory are built-in runtime capabilities
-
-The runtime should treat vectorization and memory as built-in capabilities, not as optional afterthoughts.
-
-That includes:
-- per-project codebase indexing,
-- project document retrieval,
-- agent memory retrieval,
-- transcript search,
-- index refresh/repair,
-- and operator-visible diagnostics.
-
-Recommended default implementation direction:
-- SQLite + WAL
-- FTS5
-- sqlite-vec
-- per-project index DBs
-- repo map / symbol metadata for code retrieval
 
 ## 12. Recommended v1/v1.5 Deployment Modes
 
