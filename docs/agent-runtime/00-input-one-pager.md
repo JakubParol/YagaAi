@@ -83,6 +83,8 @@ The human stays in control. Agents do real work, but they do it inside a system 
 
 Mission Control is not a side tool.
 It is the first serious domain workflow layer inside the runtime.
+It must be reachable both through **API** and **CLI**.
+In practice, agents will often prefer the CLI for structured operational work, while UI and integrations will often prefer the API.
 
 Mission Control should be the source of truth for the **development workflow state**, including:
 
@@ -102,6 +104,7 @@ The Agent Runtime should remain responsible for:
 - reply publication state,
 - event history,
 - per-agent memory,
+- vectorization and retrieval infrastructure,
 - observability and recovery.
 
 Short version:
@@ -110,6 +113,10 @@ Short version:
 - **Agent Runtime owns agent coordination and runtime semantics**
 
 Together, they form one coherent system.
+
+The runtime also needs a real **Web UI host**.
+This is not optional.
+We need a management/admin/configuration surface, but it must stay simple and operationally light.
 
 ---
 
@@ -236,6 +243,13 @@ That keeps ownership coherent across WhatsApp, Discord, web, and future surfaces
 Each agent should have its own memory.
 Memory is part of the system’s leverage, but it must stay disciplined.
 
+We also want vectorization on multiple levels:
+
+- **project-level codebase vectorization** for every managed repository,
+- **project knowledge/document retrieval**,
+- **agent memory retrieval**,
+- and separate **session/transcript search** for replay and debugging.
+
 We want layered memory:
 
 - working memory,
@@ -259,6 +273,11 @@ Important constraint:
 
 No uncontrolled self-rewriting magic. No “the model probably remembers”.
 
+Important retrieval principle:
+- vectors are an index, not the source of truth,
+- code retrieval needs structure, symbols, and exact search in addition to embeddings,
+- and memory should be curated, typed, and inspectable.
+
 ---
 
 ## Simplicity Rules
@@ -272,9 +291,12 @@ Practical design rules:
 - keep callback contracts explicit,
 - keep reply routing explicit,
 - keep Mission Control as the dev workflow authority,
+- keep both CLI and API as first-class interfaces,
+- keep the Web UI as a built-in management surface,
 - keep durable records queryable,
 - keep recovery paths boring and predictable,
 - keep agent memory separate from operational truth,
+- keep retrieval/indexing inspectable and repairable,
 - keep runtime concepts understandable to humans operating the system.
 
 If a feature creates complexity without making reliability, recovery, or leverage better, it should probably not exist.
@@ -301,6 +323,7 @@ v1 is about getting the core right:
 - reliable execution handoffs,
 - Mission Control integration,
 - durable memory,
+- codebase vectorization and retrieval,
 - clear observability,
 - and graceful failure handling.
 
@@ -331,10 +354,11 @@ In order:
 
 1. **Reliable A2A and ownership semantics**
 2. **Event model, callbacks, retries, and watchdogs**
-3. **Mission Control integration as first-class dev workflow**
-4. **Observability, audit, and replay**
-5. **Per-agent memory and controlled self-improvement**
-6. **Additional surfaces, tooling, and optimizations**
+3. **Mission Control integration as first-class dev workflow, via both CLI and API**
+4. **Built-in Web UI host for management, administration, and configuration**
+5. **Per-agent memory plus project/codebase vectorization and retrieval**
+6. **Observability, audit, and replay**
+7. **Additional surfaces, tooling, and optimizations**
 
 If priority 6 harms priority 1, 2, or 3, we are doing it backwards.
 
@@ -342,4 +366,4 @@ If priority 6 harms priority 1, 2, or 3, we are doing it backwards.
 
 ## One-Sentence Definition
 
-**Agent Runtime is a lightweight, event-driven control plane for developer agents: it coordinates distinct agents, makes A2A reliable, uses Mission Control as the development workflow engine, and treats memory, callbacks, and recovery as first-class concerns.**
+**Agent Runtime is a lightweight, event-driven control plane for developer agents: it coordinates distinct agents, makes A2A reliable, uses Mission Control as the development workflow engine through both CLI and API, includes a built-in Web UI host, and treats memory, vectorization, callbacks, and recovery as first-class concerns.**

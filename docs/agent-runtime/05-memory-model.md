@@ -8,6 +8,19 @@ it can rely on, and prevents uncontrolled cross-agent contamination.
 
 A shared-facts layer may exist as a governed exception. It is not the default interaction model.
 
+## Memory Is Not the Same as Retrieval
+
+Yaga needs retrieval on multiple planes, and they must not be collapsed into one giant blob.
+
+The runtime should distinguish at least:
+- **agent memory** — durable facts, preferences, decisions, lessons, procedures
+- **project code index** — source code, symbols, AST-aware chunks, repo map
+- **project knowledge/docs index** — architecture docs, ADRs, READMEs, specs
+- **session/transcript search** — raw history for replay/debugging/fallback recall
+
+These may share infrastructure, but they are not the same thing semantically.
+Vectors are an index over these materials, not the source of truth.
+
 ## Memory Layers
 
 | Layer | Meaning | Written by | Retention |
@@ -19,6 +32,19 @@ A shared-facts layer may exist as a governed exception. It is not the default in
 
 These are conceptual layers. They may share storage, but reads/writes must respect
 layer semantics.
+
+### Typed-memory direction
+
+Long-term memory should trend toward **typed records**, not only free-form transcript fragments.
+Useful memory categories include:
+- fact
+- preference
+- decision
+- lesson
+- todo/reminder
+- open_question
+- project_note
+- relationship/context
 
 ## Event History Is Not Memory
 
@@ -77,6 +103,17 @@ At task start, an agent may load:
 Memory reads do not substitute for reading current task/request state from the proper durable store.
 If memory conflicts with task/request state, the durable operational store wins.
 
+### Retrieval policy across planes
+
+For code and project knowledge retrieval, the runtime should prefer a hybrid approach:
+- lexical search (FTS/BM25)
+- semantic search (embeddings)
+- metadata/path filters
+- repo-map / symbol awareness for code
+- exact grep/symbol fallback when needed
+
+Code retrieval should not rely on vectors alone.
+
 ## Correction and Retraction
 
 Memory entries must be correctable and retractable:
@@ -127,6 +164,34 @@ procedural → working → episodic → semantic.
 
 Never silently truncate without logging a `memory.context_overflow` event.
 
+For non-memory retrieval planes (project index / transcript search), the runtime should also surface retrieval truncation or stale-index conditions through structured diagnostics rather than failing silently.
+
+## Indexing and Freshness
+
+Because Yaga also vectorizes codebases and project knowledge, freshness is a first-class concern.
+
+Indexed materials should track enough metadata to answer:
+- what was indexed,
+- when,
+- with which parser/chunker version,
+- with which embedding model/version,
+- and whether the current source material has changed.
+
+At minimum, indexed file/chunk metadata should include:
+- path
+- content hash
+- size / mtime
+- chunker/parser version
+- embedding model/version
+- last indexed timestamp
+
+The system should support:
+- dirty-file queues
+- resumable indexing
+- deleted-file tombstones
+- periodic repair scans
+- operator-visible stale-index diagnostics
+
 ## Memory Integrity
 
 Memory is a potential attack surface.
@@ -160,3 +225,5 @@ Memory must **not** become the durable source of truth for:
 - callback routing contracts
 - reply target
 - reply publication state
+
+Likewise, vector indexes for code, docs, or transcripts must not become the durable source of truth for workflow state. They are retrieval accelerators over canonical source material, not replacements for runtime state or human-readable records.

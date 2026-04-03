@@ -14,6 +14,12 @@ The runtime uses four primitive message types:
 Commands express intent. Events express facts. Status is derived state. Artifacts are outputs.
 These must not be conflated.
 
+The runtime must expose these semantics consistently across:
+- built-in Web UI host
+- CLI
+- API
+- adapter surfaces
+
 For user-originated durable work, the runtime now exposes **two related but distinct contracts**:
 1. **Ingress normalization contract** — surface adapter → owner main
 2. **Owner-to-owner A2A / handoff contract** — owner main → specialist main
@@ -236,6 +242,14 @@ Receiving the same message twice in the same domain must produce the same outcom
 
 ---
 
+## Runtime-facing operational surfaces
+
+Mission Control and other runtime consumers should be able to interact through both:
+- **API** — for UI, integrations, and external automation
+- **CLI** — for agents and operators doing structured operational work
+
+The Web UI host is a mandatory built-in runtime surface, but it should remain a consumer of the same stable runtime contracts rather than a separate orchestration authority.
+
 ## Detached vs Session-Bound Execution
 
 The system supports two execution modes:
@@ -275,6 +289,7 @@ surface session receives user message
   → request normalized into agent:main:main
   → James delegates to agent:naomi:main
   → Naomi may delegate review/verify loop via Amos through MC
+  → project/code/doc retrieval may be consulted through runtime indexing services
   → terminal callback returns to agent:main:main
   → James decides final or intermediate human-visible reply
   → surface adapter publishes via stored reply target

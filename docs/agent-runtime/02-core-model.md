@@ -13,6 +13,7 @@
 | **event** | Fact that something happened | Yes (immutable) | runtime / agent | event log |
 | **artifact** | Work result passed further | Yes | producing agent | artifact store |
 | **memory** | Persisted agent context | Yes | agent | memory store |
+| **project index** | Durable retrieval/index state for one managed project | Yes | runtime | project index store |
 | **work item / US** | Domain work object in Mission Control | Yes | assigned agent | Mission Control |
 
 ## Entity Definitions
@@ -156,6 +157,19 @@ operational state.
 Operational state (who owns what, what status a task is in, where a reply should be
 published) does not live in memory.
 
+### Project Index
+
+A project index is the durable retrieval/index state for one managed project.
+It exists to support:
+- codebase semantic retrieval
+- lexical retrieval
+- symbol-aware navigation
+- project document retrieval
+- freshness/repair tracking
+
+A project index is not the source of truth for the project’s code or workflow state.
+It is a retrieval accelerator over canonical source material.
+
 ### Work Item / User Story
 
 A work item is a domain-level concept in Mission Control. It is a specialization of
@@ -220,6 +234,7 @@ to the owner, not an independent domain owner.
 | Workflow state in dev flow | Mission Control |
 | Execution history / chronology | Event log |
 | Agent knowledge | Memory store |
+| Project retrieval/index state | Project index store |
 | Work results | Artifact store |
 
 ### Practical split
@@ -228,6 +243,7 @@ to the owner, not an independent domain owner.
 - **Task / flow systems** answer: what work is currently in progress, who owns that execution work, what is the current task/US status?
 - **Event log** answers: what happened, in what order, and why?
 - **Memory** answers: what should the agent remember for future work?
+- **Project index store** answers: what retrieval/index state exists for code/docs, how fresh it is, and what retrieval artifacts are available
 
 Memory must never be the source of truth for operational state.
 Event history is the source of truth for what happened, not for what the current state is.

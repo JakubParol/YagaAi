@@ -208,6 +208,11 @@ Transcripts may help debugging, but they are not the recovery mechanism.
 | `current_owner_agent_id` in request state | Derived/mirrored, not authoritative |
 | `reply_target` vs `reply_session_key` | Durable concept vs current concrete endpoint |
 | Restart recovery | Request record + event log + task state; no transcript dependency |
+| Event transport | SQLite-first durable event log + job tables |
+| Mission Control shape | Integrated runtime module with API + CLI |
+| Memory/retrieval model | Layered per-agent memory plus separate code/docs/transcript retrieval planes |
+| Vectorization storage | SQLite + WAL + FTS5 + sqlite-vec + per-project index DBs |
+| Web UI host | Mandatory built-in runtime surface |
 
 ---
 
@@ -218,11 +223,16 @@ beyond the doc 12 integration.
 
 ### Decision 10 — Event transport
 
-**Chosen v1 stance:** PostgreSQL table + `LISTEN/NOTIFY`.
+**Chosen v1 stance:** SQLite-first durable event log + job tables inside the local runtime.
 
-Use a durable `event_queue` / event-log backed by PostgreSQL with dedup via
-`dedup_key` and replay via table scan. This keeps v1 on the same persistence layer
-already used by Mission Control.
+Use a durable event log / job queue backed by the runtime’s local store with:
+- append-only event records
+- dedup via `dedup_key`
+- replay via table scan
+- scheduled jobs for retries, watchdogs, and timeout handling
+
+Default v1 storage shape should be lightweight and local-first.
+PostgreSQL may exist later as an advanced deployment mode, but it is not the default architectural center.
 
 ---
 
@@ -251,19 +261,59 @@ Execution runtimes remain subordinate to the owning agent. They are not durable 
 ### Decision 13 — Mission Control as component
 
 **Chosen v1 stance:** Mission Control remains the authoritative workflow state component
-for the development flow, regardless of whether it is implemented as library or service.
+for the development flow, but in the target product shape it should be integrated as a runtime module rather than a mandatory heavy multi-service stack.
 
 The critical architectural constraint is not deployment shape. It is that MC remains the
 source of truth for US/task workflow state in the dev flow.
 
+Mission Control must be reachable through both:
+- API
+- CLI
+
+The built-in Web UI host is the primary operator/admin/configuration surface over Mission Control and runtime state.
+
 ---
 
-### Decision 14 — Memory storage model
+### Decision 14 — Memory and retrieval model
 
 **Chosen v1 stance:** Memory remains layered and per-agent. It is not the source of truth
 for request routing, publication state, or execution ownership.
 
+Additional v1 rule:
+- Yaga supports retrieval on multiple planes: agent memory, project code index, project knowledge/docs index, and transcript search
+- vectors are an index, not the source of truth
+- code retrieval must combine structure/symbol awareness and exact lexical search with embeddings
+
 ---
+
+### Decision 15 — Vectorization and local index storage
+
+**Chosen v1 stance:** Use a lightweight local-first indexing model by default.
+
+Recommended default implementation direction:
+- SQLite + WAL
+- FTS5
+- sqlite-vec
+- per-project index databases
+- parser-aware chunking for code
+- repo-map / symbol metadata for code navigation
+- dirty queues and repair scans for freshness control
+
+Qdrant/PostgreSQL/external vector backends may exist later as optional advanced modes, but they are not the default product shape for Linux/macOS local installs.
+
+### Decision 16 — Web UI host
+
+**Chosen v1 stance:** The Web UI host is mandatory.
+
+It is a built-in runtime surface for:
+- management
+- administration
+- configuration
+- Mission Control operator workflows
+- memory/index diagnostics
+- repair/recovery actions
+
+It must stay simple and must not force the runtime back into a heavy split-service web platform by default.
 
 ## What v1 Explicitly Does Not Do
 
@@ -277,3 +327,5 @@ for request routing, publication state, or execution ownership.
 | Transcript-based restart recovery | Not in v1 | Recovery must work from durable records |
 | Automatic cross-surface retargeting | Not in v1 by default | Requires explicit transfer or fallback decision |
 | Unlimited autonomous publish retry | Not in v1 | Retry authority is bounded and policy-driven |
+| Docker/Redis/Dapr mandatory local install | Not in v1 default | Baseline Linux/macOS install must stay lightweight |
+| External vector DB as default | Not in v1 default | Local-first retrieval/indexing is the baseline |

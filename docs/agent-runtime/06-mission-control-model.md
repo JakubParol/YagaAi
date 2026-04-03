@@ -4,6 +4,7 @@
 
 Mission Control (MC) is the first domain implementation of the generic Agent Runtime model.
 It is the privileged operational layer for the development workflow.
+It is also a built-in management/admin/configuration surface through the runtime’s Web UI host, while remaining reachable through both API and CLI.
 
 The core runtime defines universal primitives: agent, session, request, task, flow,
 status, memory, event, and artifact. Mission Control specializes those primitives for
@@ -23,6 +24,8 @@ real domain.
 | Status | canonical task statuses | US-specific workflow statuses |
 | Callback | callback event | assignment / status / terminal outcome events |
 | Orchestration | event routing + owner coordination | active state machine for dev flow |
+| Operator surface | runtime Web UI host | admin, management, planning, and runtime views |
+| Programmatic interface | local API | first-class API and CLI contracts |
 
 ## Source-of-Truth Boundary
 
@@ -59,6 +62,15 @@ This boundary matters:
 
 MC may reject a transition if it violates process rules. Agents do not bypass MC to update
 workflow state directly.
+
+### CLI and API stance
+
+Mission Control must be usable through both:
+- **API** — for UI, integrations, and external automation
+- **CLI** — for agents and operators doing structured operational work
+
+This is not a convenience detail. In practice, agents will often find CLI interaction simpler,
+safer, and more robust than low-level API choreography.
 
 ## Generic → Mission Control Mapping
 
@@ -130,6 +142,7 @@ The authoritative v1 rule is:
 In short:
 - MC is the authoritative writer of dev workflow state
 - James main is the authoritative strategic callback destination for terminal dev-flow outcomes toward the request
+- the built-in Web UI host is the main operator/admin/configuration surface over this state, not a separate source of truth
 
 James is notified via explicit callback or event when:
 - a US is submitted for code review (if configured)
@@ -147,6 +160,8 @@ Those notifications inform James' reply decision, but do not themselves make pub
 
 Agents do not update workflow state directly.
 MC is the only writer to US and task status in the dev flow.
+
+MC may additionally expose index/memory health and project context views, but those remain read models over runtime-owned retrieval/indexing services rather than separate MC-owned storage authorities.
 
 ## Relation to Request Closure
 

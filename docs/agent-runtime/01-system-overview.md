@@ -17,6 +17,8 @@ The system is designed for:
 - asynchronous tasks with explicit callbacks
 - multi-agent handoffs across orchestration, execution, review, and research
 - workflows that require auditability, replay, recovery, and memory continuity
+- project/codebase vectorization and retrieval
+- operation through both CLI and API
 
 It is not designed as:
 - a universal chatbot
@@ -84,8 +86,9 @@ The core value comes from combining:
 - simple and reliable agent-to-agent communication
 - event-centric orchestration
 - controlled self-improvement
+- project-aware retrieval and vectorization
 - boringly reliable task relay
-- strong operator UX
+- strong operator UX across Web UI, CLI, and API
 
 ## System Boundary
 
@@ -97,9 +100,11 @@ The runtime is responsible for:
 - ownership and callback handling
 - explicit reply-target and publication state
 - per-agent memory
+- project/code/document vectorization and retrieval
 - audit, replay, and debugging
 - controlled improvement loops
 - workflow state for the most important flows
+- built-in Web UI host plus CLI/API operational surfaces
 
 The runtime does not try to be (at start):
 - a full enterprise scheduler

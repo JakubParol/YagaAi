@@ -84,6 +84,19 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 | `memory.context_overflow` | agent | `agent`, `task_ref`, `layers_truncated` | Context budget exceeded |
 | `memory.stale_read` | agent | `agent`, `key`, `retracted_at` | Agent read a retracted memory entry |
 
+## Retrieval / Indexing Events
+
+| Event Type | Emitted by | Key fields | Meaning |
+|------------|-----------|------------|---------|
+| `index.run_started` | runtime | `project_ref`, `index_kind`, `index_run_id` | Indexing run started for code/docs or another retrieval plane |
+| `index.run_completed` | runtime | `project_ref`, `index_kind`, `index_run_id`, `stats` | Indexing run completed successfully |
+| `index.run_failed` | runtime | `project_ref`, `index_kind`, `index_run_id`, `error` | Indexing run failed |
+| `index.file_marked_dirty` | runtime | `project_ref`, `path`, `reason` | File/chunk marked for reindex |
+| `index.file_repaired` | runtime | `project_ref`, `path`, `index_run_id` | Previously stale/broken file repaired |
+| `index.stale_detected` | runtime | `project_ref`, `path_or_scope`, `reason` | Runtime detected stale retrieval/index state |
+| `retrieval.query_executed` | runtime or agent | `plane`, `query_ref`, `project_ref?`, `agent?` | Hybrid/lexical/semantic retrieval query executed |
+| `retrieval.query_failed` | runtime or agent | `plane`, `query_ref`, `error` | Retrieval query failed or timed out |
+
 ## Execution Events
 
 | Event Type | Emitted by | Key fields | Meaning |
@@ -129,3 +142,5 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 Keep the canonical request/publication event set tight.
 Additional events such as publish acknowledgement, retry scheduled, or retry exhausted
 should only be introduced if the implementation needs them beyond the minimum v1 model.
+
+The same principle applies to indexing/retrieval events: keep the core set focused on freshness, failures, repairs, and query observability rather than turning the event catalog into a low-level parser trace.

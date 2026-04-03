@@ -10,6 +10,8 @@ An operator must be able to answer without digging through transcript chaos:
 - Has the work finished?
 - Has the human-visible reply actually been published?
 - If not, what failed and who owns recovery?
+- Is project indexing fresh, stale, or broken?
+- Is memory retrieval healthy and explainable?
 
 Doc 12 integration adds one important observability requirement:
 
@@ -49,6 +51,7 @@ For every relevant run (request, task, flow, or session), the system must be abl
 | **Flow / task timeline** | Ordered execution events and status transitions |
 | **Tool call ledger** | What tools were called, when, with what inputs, and what they returned |
 | **Memory write ledger** | What memory was written, why, and from which event |
+| **Retrieval / indexing ledger** | Which indexes were queried or updated, with what versions, freshness state, and outcomes |
 | **Prompt / context snapshot** | What the agent was given at each significant decision point |
 | **Artifact lineage** | Which artifacts were produced, from which tasks, and where they were used |
 | **Policy / version lineage** | Which prompt / skill / routing version was active |
@@ -63,6 +66,7 @@ For every relevant run (request, task, flow, or session), the system must be abl
 | Current task status and execution owner | task store / Mission Control | direct query |
 | What happened (chronology) | event log | timeline query by `correlation_id` and/or `request_id` |
 | Agent knowledge at time T | memory store (timestamped) | versioned memory read |
+| Code/doc index state | project index store | query by project / path / index run |
 | Work results | artifact store | artifact query by task or flow ref |
 
 Event history is the source of truth for what happened.
@@ -95,6 +99,16 @@ For any task or flow, an operator must be able to see:
 - callback target
 - linked request if applicable
 
+### 2a. Index / retrieval view
+
+For any managed project or retrieval plane, an operator must be able to see:
+- index freshness state
+- last successful index run
+- current dirty queue / stale count
+- parser/chunker/embedding versions
+- failed files/chunks if any
+- last retrieval errors or timeouts
+
 ### 3. Joined operator view
 
 The operator should be able to see, in one joined view:
@@ -102,6 +116,7 @@ The operator should be able to see, in one joined view:
 - task/flow state
 - callback state
 - publication state
+- retrieval/index health when relevant
 - links between `request_id` and `correlation_id`
 
 This is the minimum necessary to debug “work is done but the human never got the answer”.
@@ -176,10 +191,12 @@ See [reference/canonical-events.md](reference/canonical-events.md).
 At minimum, an operator must be able to:
 - list all requests currently in a non-terminal publication/routing state
 - list all tasks / flows currently in a non-terminal execution state
+- list all projects/indexes currently stale, failed, or repair-required
 - for any request: see owner, reply target, publication state, age, and last request event
 - for any task: see owner, status, age, and last task event
+- for any index: see freshness state, age, and last index event
 - for any failure: see the recovery action taken and its outcome
-- search by `request_id`, `correlation_id`, task reference, agent, or artifact reference
+- search by `request_id`, `correlation_id`, task reference, agent, artifact reference, or project/path
 - trigger a manual override / reconciliation decision with a reason (audit trail preserved)
 
 ---
@@ -195,3 +212,9 @@ The system should support direct inspection of scenarios such as:
 - ambiguous publish after retry
 
 If the runtime cannot answer those cleanly, observability is still incomplete.
+
+## Operator Surfaces
+
+The built-in Web UI host is the primary operator/admin/configuration surface.
+The CLI is the parallel operational surface for agents and operators.
+Both must expose the same authoritative runtime and Mission Control state rather than creating divergent operational stories.

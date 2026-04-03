@@ -36,6 +36,9 @@ For the architecture mental model, start with:
 
 If you are implementing the model, read this early as well:
 - [11-implementation-decisions.md](11-implementation-decisions.md)
+- [13-hld-runtime-shape-and-installation.md](13-hld-runtime-shape-and-installation.md)
+- [14-memory-and-vectorization.md](14-memory-and-vectorization.md)
+- [15-internal-prompt-architecture.md](15-internal-prompt-architecture.md)
 
 The `reference/` directory contains canonical definitions you can link to from anywhere.
 
@@ -56,6 +59,9 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [10-governance-and-v1-boundaries.md](10-governance-and-v1-boundaries.md) | v1 scope, non-goals, control points, edge-case tests |
 | [11-implementation-decisions.md](11-implementation-decisions.md) | Blocking implementation decisions, especially for request/routing/publication |
 | [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md) | Mandatory topology for surface-originated durable work |
+| [13-hld-runtime-shape-and-installation.md](13-hld-runtime-shape-and-installation.md) | Recommended runtime shape, deployment pattern, and Mission Control integration |
+| [14-memory-and-vectorization.md](14-memory-and-vectorization.md) | Memory architecture, hybrid retrieval, and per-project codebase vectorization |
+| [15-internal-prompt-architecture.md](15-internal-prompt-architecture.md) | Internal prompt layering, runtime enforcement split, skills, and memory injection model |
 
 ## Reference
 
