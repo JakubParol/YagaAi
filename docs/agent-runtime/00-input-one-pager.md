@@ -13,7 +13,7 @@ It does more than route messages, but it is also much narrower and lighter than 
 
 ## What We Are Building
 
-We are building a system in the same broad family as OpenClaw, but shaped much more tightly around our own workflow and standards.
+We are building a system shaped tightly around our own workflow and standards.
 
 At the highest level, we are building:
 

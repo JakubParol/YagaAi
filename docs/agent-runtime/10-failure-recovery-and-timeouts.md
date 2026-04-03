@@ -1,4 +1,4 @@
-# 08 — Failure, Recovery, and Timeouts
+# 10 — Failure, Recovery, and Timeouts
 
 ## Design Principle
 
@@ -154,6 +154,25 @@ Used when:
 - work should not be cancelled, but must not proceed silently
 
 A blocked request/task always needs an explicit recovery owner.
+
+### Escalate vs Block — Decision Rule
+
+| Question | If YES → | If NO → |
+|----------|----------|---------|
+| Can the system make progress without human/operator input? | Escalate (James or operator can decide) | Block |
+| Is there a quality or scope disagreement that requires judgment? | Escalate | — |
+| Is the blocker external (third-party, environment, access)? | Block | — |
+| Is the work safe to pause indefinitely? | Block | Escalate (time-bounded concern) |
+| Has retry/reassign already failed at least once? | Escalate | Retry first |
+
+**Key distinction:**
+- **Escalate** means "a decision-maker needs to act now."
+- **Block** means "we cannot proceed; a condition must be met before continuing."
+
+A task that is escalated has an active recovery owner (James or operator).
+A task that is blocked is paused, waiting for an external signal.
+Escalated tasks should not stay escalated indefinitely — if the escalation itself is not resolved
+within the workflow timeout, it becomes a blocked-escalation requiring operator intervention.
 
 ---
 

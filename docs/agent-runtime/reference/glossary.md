@@ -36,12 +36,24 @@ Distinct from `request_id` in v1.
 An identifier on a message that enables idempotent processing. Delivering the same
 message twice with the same key has the same effect as delivering it once.
 
+**Delegation**  
+The act of assigning execution responsibility for a unit of work from one agent to another.
+Delegation is expressed through a handoff. The delegating agent remains the strategic owner
+unless ownership is explicitly transferred.
+
 **Definition of Done**  
 The explicit acceptance criteria for a task or handoff. Required in every handoff contract.
 
 **Detached Execution**  
 An execution mode for background tasks with an explicit callback contract, retry semantics,
 and a full event trail. The correct default for important work.
+
+**Durable Work**  
+Any user-originated work that may outlive the current interaction turn, requires specialist
+delegation, creates task or callback obligations, or requires retry, replay, recovery, or
+auditability. Durable work must normalize through the owner's `main` session and must not
+remain surface-local.
+See [04-channel-sessions-and-main-owner-routing.md](../04-channel-sessions-and-main-owner-routing.md).
 
 **Episodic Memory**  
 The layer of agent memory that holds the history of completed tasks and their outcomes.
@@ -100,6 +112,11 @@ routing or reply-publication truth. See [08-mission-control-model.md](../08-miss
 Acceptance of a surface-originated request into the owner-facing durable path. This is
 not the same as specialist handoff acceptance.
 
+**Orchestrating Agent**  
+An agent that coordinates a multi-step flow by delegating tasks to specialists and
+aggregating their results. James acts as the primary orchestrating agent for user-originated
+work. See [02-core-model.md](../02-core-model.md).
+
 **Owner-Facing Coordination Endpoint**  
 The agent’s canonical `main` session key used for durable coordination, callbacks, and
 cross-agent routing.
@@ -111,6 +128,17 @@ See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.
 **Publish Dedup Key**  
 Idempotency key for one human-visible publication intent. Reused across safe mechanical
 retry of the same reply intent.
+
+**Publish Intent**  
+A tracked decision to send a human-visible reply to a specific target. One request may
+produce multiple publish intents (e.g., intermediate updates and a final answer). Each
+publish intent has its own `publish_dedup_key` and tracks its own publication state.
+See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md).
+
+**Reply Intent**  
+A specific instance of the decision to publish a human-visible reply. Tracked with its
+own `publish_dedup_key` and publication state. Multiple reply intents may exist under
+one `request_id` (e.g., a status update and a final answer).
 
 **Reply Publication**  
 The human-visible publish step to a surface or delivery endpoint. Distinct from task

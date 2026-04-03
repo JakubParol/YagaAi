@@ -72,7 +72,7 @@ as a list of artifact IDs. The receiving agent loads the artifact from the artif
 Inline `input_context` is for small ephemeral context that does not need to become a
 first-class artifact.
 
-## Boundary Reminder for the Doc 12 Model
+## Boundary Reminder: Artifacts and Reply Routing
 
 Artifacts may contain content that is later published to a human.
 That does **not** make artifacts the source of truth for:

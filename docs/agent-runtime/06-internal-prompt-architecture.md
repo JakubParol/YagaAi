@@ -9,11 +9,6 @@ Define how Yaga should shape agent behavior internally:
 - how skills/playbooks should be loaded,
 - and how to keep the whole thing compact, inspectable, and operationally strong.
 
-This document is based on:
-- OpenClaw prompt/runtime patterns,
-- Hermes prompt assembly patterns,
-- and the target Yaga design direction.
-
 ---
 
 ## 1. Core Principle
@@ -65,7 +60,7 @@ This is the right center of gravity.
 
 > **Prompt text is for behavior shaping. Runtime/policy is for enforcement.**
 
-This is one of the most important design rules we should steal from OpenClaw.
+This is one of the most important design rules in Yaga's prompt architecture.
 
 ### Prompt should handle things like:
 - posture
@@ -164,7 +159,7 @@ This mode should be more operational and less conversational.
 
 ## 5. Cached vs Ephemeral Prompt Layers
 
-This is the strongest single structural idea to steal from Hermes.
+This is the strongest single structural idea in Yaga's prompt layering model.
 
 ## 5.1 Cached stable layers
 These should stay stable across many turns unless something important changes.
@@ -281,7 +276,7 @@ The user should be able to shape behavior. The user should not accidentally turn
 ## 8. Memory in the Prompt
 
 ## 8.1 Long-tail memory should not be injected wholesale
-This is another excellent lesson from OpenClaw.
+This is a key principle for keeping the prompt compact and retrievable.
 
 Do not stuff all memory into the base system prompt.
 

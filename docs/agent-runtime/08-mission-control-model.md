@@ -1,4 +1,4 @@
-# 06 — Mission Control Model
+# 08 — Mission Control Model
 
 ## What Mission Control Is
 

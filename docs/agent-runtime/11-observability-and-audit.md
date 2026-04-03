@@ -1,4 +1,4 @@
-# 09 — Observability and Audit
+# 11 — Observability and Audit
 
 ## Design Principle
 
@@ -13,7 +13,7 @@ An operator must be able to answer without digging through transcript chaos:
 - Is project indexing fresh, stale, or broken?
 - Is memory retrieval healthy and explainable?
 
-Doc 12 integration adds one important observability requirement:
+The channel session routing model adds one important observability requirement:
 
 > **Operators must be able to distinguish task success, callback success, and reply publication success.**
 

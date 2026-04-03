@@ -209,6 +209,42 @@ Idempotency is not one generic thing. The runtime must keep these domains distin
 
 Receiving the same message twice in the same domain must produce the same outcome as receiving it once.
 
+### Dedup Key Lifecycle
+
+Dedup keys are not forever. The runtime must define a retention policy per domain:
+
+| Domain | Key type | Minimum retention |
+|--------|----------|-------------------|
+| inbound normalization | request-level dedup key | until request is closed + replay window |
+| handoff / callback | message `dedup_key` | until message is processed + replay window |
+| reply publication | `publish_dedup_key` | until publication is terminal + replay window |
+
+A "replay window" is a configurable grace period (e.g., 24h–7d) after terminal state during which
+the system can safely reject redeliveries.
+
+After the window expires, a replayed message should be treated as a **new event** and logged as an
+anomaly, not silently deduplicated.
+
+---
+
+## Message Ordering Guarantees
+
+The system does **not** guarantee global ordering across all agents or requests.
+What it does guarantee per domain:
+
+| Scope | Ordering guarantee |
+|-------|--------------------|
+| Within a single `correlation_id` | Events are appended in causal order; replay preserves insertion order |
+| Within a single `request_id` lifecycle | Publication state transitions are monotonic (no rollback to prior state) |
+| Cross-agent A2A messages | No global ordering guarantee; each message is independently deduplicated |
+
+**Out-of-order delivery handling:**
+If a callback or event arrives after the state it references has already advanced, the system must:
+- check whether the arriving event is still valid given current state,
+- apply it if idempotent and consistent (e.g., a second "accepted" on an already-accepted task),
+- discard with an audit log entry if it would violate state monotonicity,
+- never silently apply an out-of-order event that could alter routing or publication state.
+
 ---
 
 ## Runtime-facing operational surfaces

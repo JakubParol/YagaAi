@@ -1,4 +1,4 @@
-# 04 — Ownership, Lifecycle, and State
+# 05 — Ownership, Lifecycle, and State
 
 ## Ownership Model
 
