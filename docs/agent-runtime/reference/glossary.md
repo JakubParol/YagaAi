@@ -17,7 +17,7 @@ human reply publication success.
 
 **Causation ID**  
 An identifier on an event that points to the event that caused it. Used to reconstruct
-causal chains. See [09-observability-and-audit.md](../09-observability-and-audit.md).
+causal chains. See [11-observability-and-audit.md](../11-observability-and-audit.md).
 
 **Channel Session**  
 A session bound to a transport surface or surface context (for example WhatsApp,
@@ -45,11 +45,11 @@ and a full event trail. The correct default for important work.
 
 **Episodic Memory**  
 The layer of agent memory that holds the history of completed tasks and their outcomes.
-See [05-memory-model.md](../05-memory-model.md).
+See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Escalation**  
 The transfer of a deadlocked or unresolvable situation to James. Triggered by loop limits,
-ownership conflicts, or quality deadlocks. See [04-ownership-lifecycle-and-state.md](../04-ownership-lifecycle-and-state.md).
+ownership conflicts, or quality deadlocks. See [05-ownership-lifecycle-and-state.md](../05-ownership-lifecycle-and-state.md).
 
 **Event**  
 An immutable fact that something happened. The authoritative execution trace.
@@ -64,7 +64,7 @@ This is different from the strategic owner of the request as a whole.
 
 **Execution Timeout**  
 A timeout at the runtime or worker level: the execution runtime has not responded
-within the expected window. See [08-failure-recovery-and-timeouts.md](../08-failure-recovery-and-timeouts.md).
+within the expected window. See [10-failure-recovery-and-timeouts.md](../10-failure-recovery-and-timeouts.md).
 
 **Final Accountability**  
 The responsibility James holds toward the user for the ultimate outcome, regardless
@@ -89,12 +89,12 @@ or `agent:naomi:main`. The durable owner remains the agent, not the session key.
 
 **Memory**  
 The persisted context of an agent, layered into working, episodic, semantic, and
-procedural. Not the source of truth for operational state. See [05-memory-model.md](../05-memory-model.md).
+procedural. Not the source of truth for operational state. See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Mission Control (MC)**  
 The first domain implementation of the Agent Runtime, specialized for the development
 workflow. Source of truth for US and task state in the dev flow. MC does not own request
-routing or reply-publication truth. See [06-mission-control-model.md](../06-mission-control-model.md).
+routing or reply-publication truth. See [08-mission-control-model.md](../08-mission-control-model.md).
 
 **Normalization Acceptance**  
 Acceptance of a surface-originated request into the owner-facing durable path. This is
@@ -106,7 +106,7 @@ cross-agent routing.
 
 **Procedural Memory / Skills**  
 The layer of agent memory that holds validated ways of operating and effective patterns.
-See [05-memory-model.md](../05-memory-model.md).
+See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Publish Dedup Key**  
 Idempotency key for one human-visible publication intent. Reused across safe mechanical
@@ -138,7 +138,7 @@ to the agent. Not a durable identity.
 
 **Semantic Memory**  
 The layer of agent memory that holds durable knowledge, decisions, preferences, and
-domain patterns. See [05-memory-model.md](../05-memory-model.md).
+domain patterns. See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Session**  
 The current active execution or conversation context for an agent. Execution-scoped,
@@ -150,7 +150,7 @@ within the same session context.
 
 **Shared Facts**  
 A governed layer of cross-agent knowledge that agents may rely on by default, after
-promotion. Requires explicit governance. See [05-memory-model.md](../05-memory-model.md).
+promotion. Requires explicit governance. See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Status**  
 A canonical snapshot of the current state of a task or work item. Request/publication
@@ -174,7 +174,7 @@ The primary unit of delegation and accountability. See [02-core-model.md](../02-
 
 **User Story (US)**  
 The primary work item type in Mission Control. A domain-level specialization of `flow`
-for the development workflow. See [06-mission-control-model.md](../06-mission-control-model.md).
+for the development workflow. See [08-mission-control-model.md](../08-mission-control-model.md).
 
 **Verify**  
 A QA step performed by Amos after code review passes, confirming functional correctness
@@ -182,8 +182,8 @@ before a US is marked Done.
 
 **Working Memory**  
 The layer of agent memory that holds the current operational context within a session.
-May be promoted to episodic or semantic memory. See [05-memory-model.md](../05-memory-model.md).
+May be promoted to episodic or semantic memory. See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
 
 **Workflow Timeout (SLA Timeout)**  
 A timeout at the task or flow level: expected progress has not occurred within a defined
-business window. See [08-failure-recovery-and-timeouts.md](../08-failure-recovery-and-timeouts.md).
+business window. See [10-failure-recovery-and-timeouts.md](../10-failure-recovery-and-timeouts.md).

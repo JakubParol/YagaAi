@@ -150,7 +150,7 @@ maintained by an agent.
 
 ### Memory
 
-Memory is the persisted context of an agent. It is layered (see [05-memory-model.md](05-memory-model.md))
+Memory is the persisted context of an agent. It is layered (see [07-memory-model-and-vectorization.md](07-memory-model-and-vectorization.md))
 and per-agent. Memory informs future decisions; it is not the source of truth for
 operational state.
 

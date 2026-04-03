@@ -4,11 +4,6 @@ This directory describes the target architecture and operating model for the Age
 It covers how the system is designed to behave, what contracts it enforces, and where the
 sources of truth live.
 
-Most files here describe the architecture itself.
-One file (`11-implementation-decisions.md`) records blocking implementation choices.
-One file (`12-channel-sessions-and-main-owner-routing.md`) defines the routing topology for
-surface-originated durable work and its integration into the rest of the corpus.
-
 ## What Is the Agent Runtime
 
 A workflow-first control plane for multi-agent work. It coordinates separated agents
@@ -26,19 +21,36 @@ It is closer to a distributed workflow engine for agents than to a general-purpo
 
 ## How to Read These Docs
 
-For the architecture mental model, start with:
-1. [00-input-one-pager.md](00-input-one-pager.md)
-2. [01-system-overview.md](01-system-overview.md)
-3. [02-core-model.md](02-core-model.md)
-4. [03-runtime-and-a2a.md](03-runtime-and-a2a.md)
-5. [04-ownership-lifecycle-and-state.md](04-ownership-lifecycle-and-state.md)
-6. [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md)
+Read in order. Each document assumes the previous ones.
 
-If you are implementing the model, read this early as well:
-- [11-implementation-decisions.md](11-implementation-decisions.md)
-- [13-hld-runtime-shape-and-installation.md](13-hld-runtime-shape-and-installation.md)
-- [14-memory-and-vectorization.md](14-memory-and-vectorization.md)
-- [15-internal-prompt-architecture.md](15-internal-prompt-architecture.md)
+**Start here for the mental model:**
+1. [00-input-one-pager.md](00-input-one-pager.md) — vision and build principles
+2. [01-system-overview.md](01-system-overview.md) — high-level mental model
+3. [02-core-model.md](02-core-model.md) — core entities and their relationships
+
+**Communication and routing:**
+
+4. [03-runtime-and-a2a.md](03-runtime-and-a2a.md) — message types, A2A contracts
+5. [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md) — ingress topology, normalization contract
+6. [05-ownership-lifecycle-and-state.md](05-ownership-lifecycle-and-state.md) — ownership rules, task lifecycle
+
+**How agents work internally:**
+
+7. [06-internal-prompt-architecture.md](06-internal-prompt-architecture.md) — prompt layering, runtime enforcement, skills
+8. [07-memory-model-and-vectorization.md](07-memory-model-and-vectorization.md) — memory layers, retrieval planes, vectorization
+
+**Operations and flows:**
+
+9. [08-mission-control-model.md](08-mission-control-model.md) — MC as the development-flow domain implementation
+10. [09-operational-flows.md](09-operational-flows.md) — end-to-end flows for research, implementation, QA
+11. [10-failure-recovery-and-timeouts.md](10-failure-recovery-and-timeouts.md) — failure modes, recovery paths, timeouts
+12. [11-observability-and-audit.md](11-observability-and-audit.md) — request/task observability, audit trail, replay
+
+**Governance and implementation:**
+
+13. [12-governance-and-v1-boundaries.md](12-governance-and-v1-boundaries.md) — v1 scope, non-goals, control points
+14. [13-implementation-decisions.md](13-implementation-decisions.md) — blocking implementation choices for request/routing/publication
+15. [14-hld-runtime-shape-and-installation.md](14-hld-runtime-shape-and-installation.md) — runtime shape, deployment patterns
 
 The `reference/` directory contains canonical definitions you can link to from anywhere.
 
@@ -48,20 +60,19 @@ The `reference/` directory contains canonical definitions you can link to from a
 |------|---------------|
 | [00-input-one-pager.md](00-input-one-pager.md) | Vision, thesis, build principles, and v1 priorities |
 | [01-system-overview.md](01-system-overview.md) | High-level mental model, agent roles, surface vs owner-main topology |
-| [02-core-model.md](02-core-model.md) | Definitions of entities including request, task, flow, handoff, memory |
-| [03-runtime-and-a2a.md](03-runtime-and-a2a.md) | Ingress normalization contract, A2A handoff contract, callbacks |
-| [04-ownership-lifecycle-and-state.md](04-ownership-lifecycle-and-state.md) | Ownership rules, task lifecycle, request closure, completion vs publication |
-| [05-memory-model.md](05-memory-model.md) | Memory layers, write/read policy, shared facts |
-| [06-mission-control-model.md](06-mission-control-model.md) | MC as development-flow specialization of the runtime |
-| [07-operational-flows.md](07-operational-flows.md) | End-to-end flows for research, implementation, QA |
-| [08-failure-recovery-and-timeouts.md](08-failure-recovery-and-timeouts.md) | Failure modes, recovery paths, timeout semantics |
-| [09-observability-and-audit.md](09-observability-and-audit.md) | Request/task observability, audit trail, replay |
-| [10-governance-and-v1-boundaries.md](10-governance-and-v1-boundaries.md) | v1 scope, non-goals, control points, edge-case tests |
-| [11-implementation-decisions.md](11-implementation-decisions.md) | Blocking implementation decisions, especially for request/routing/publication |
-| [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md) | Mandatory topology for surface-originated durable work |
-| [13-hld-runtime-shape-and-installation.md](13-hld-runtime-shape-and-installation.md) | Recommended runtime shape, deployment pattern, and Mission Control integration |
-| [14-memory-and-vectorization.md](14-memory-and-vectorization.md) | Memory architecture, hybrid retrieval, and per-project codebase vectorization |
-| [15-internal-prompt-architecture.md](15-internal-prompt-architecture.md) | Internal prompt layering, runtime enforcement split, skills, and memory injection model |
+| [02-core-model.md](02-core-model.md) | Definitions of entities: request, task, flow, handoff, memory, artifact |
+| [03-runtime-and-a2a.md](03-runtime-and-a2a.md) | Message types, A2A handoff contract, callbacks, correlation/dedup |
+| [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md) | Ingress normalization contract, mandatory routing topology for surface-originated work |
+| [05-ownership-lifecycle-and-state.md](05-ownership-lifecycle-and-state.md) | Ownership rules, task lifecycle, request closure, completion vs publication |
+| [06-internal-prompt-architecture.md](06-internal-prompt-architecture.md) | Prompt layering, runtime enforcement split, skills/playbooks, memory injection |
+| [07-memory-model-and-vectorization.md](07-memory-model-and-vectorization.md) | Memory layers, write/read policy, retrieval planes, hybrid search, vectorization |
+| [08-mission-control-model.md](08-mission-control-model.md) | MC as development-flow specialization of the runtime |
+| [09-operational-flows.md](09-operational-flows.md) | End-to-end flows for research, implementation, QA |
+| [10-failure-recovery-and-timeouts.md](10-failure-recovery-and-timeouts.md) | Failure modes, recovery paths, timeout semantics |
+| [11-observability-and-audit.md](11-observability-and-audit.md) | Request/task observability, audit trail, replay |
+| [12-governance-and-v1-boundaries.md](12-governance-and-v1-boundaries.md) | v1 scope, non-goals, human control points, edge-case tests |
+| [13-implementation-decisions.md](13-implementation-decisions.md) | Blocking implementation decisions for request/routing/publication |
+| [14-hld-runtime-shape-and-installation.md](14-hld-runtime-shape-and-installation.md) | Recommended runtime shape, deployment patterns, Mission Control integration |
 
 ## Reference
 
@@ -73,9 +84,3 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [reference/handoff-contract.md](reference/handoff-contract.md) | Required fields and semantics of a handoff |
 | [reference/artifact-model.md](reference/artifact-model.md) | Artifact types, lifecycle, and usage |
 | [reference/agent-roles.md](reference/agent-roles.md) | Agent definitions, ownership, and scope |
-
-## Important Navigation Note
-
-Doc 12 is no longer just an isolated side note.
-It defines the ingress / owner-coordination / reply-publication topology for durable
-surface-originated work, and the rest of this corpus is now aligned to that model.

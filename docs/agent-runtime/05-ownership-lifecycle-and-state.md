@@ -113,7 +113,7 @@ These are useful operator-facing projections, not task lifecycle states.
 A task is not execution-owned until explicitly accepted. Between dispatch and acceptance:
 - the requester retains accountability
 - the assignee has no obligation to begin work
-- timeout on acceptance triggers retry or reassignment (see [08-failure-recovery-and-timeouts.md](08-failure-recovery-and-timeouts.md))
+- timeout on acceptance triggers retry or reassignment (see [10-failure-recovery-and-timeouts.md](10-failure-recovery-and-timeouts.md))
 
 An accepted task must produce an explicit acceptance event and status change.
 

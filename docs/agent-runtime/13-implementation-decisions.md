@@ -1,11 +1,12 @@
-# 11 — Implementation Decisions
+# 13 — Implementation Decisions
 
 This document records the implementation decisions that must be made before
 architecture prose turns into code.
 
-For the doc 12 integration, the most important rule is simple:
+For the channel session routing integration (see `04-channel-sessions-and-main-owner-routing`),
+the most important rule is simple:
 
-> **If a decision affects `02`, `03`, `08`, or `09`, it must be explicit here first.**
+> **If a decision affects `02`, `03`, `10`, or `11`, it must be explicit here first.**
 
 Leaving a decision open does not keep the system flexible. It guarantees that the code
 or downstream docs will make the choice implicitly.
@@ -14,7 +15,8 @@ or downstream docs will make the choice implicitly.
 
 ## Phase 0 Gating Decisions for Request / Routing / Publication
 
-These are the blocking v1 decisions for integrating the doc 12 model.
+These are the blocking v1 decisions for integrating the channel session routing model
+(see [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)).
 
 ### Decision 1 — `request_id` vs `correlation_id`
 
@@ -210,8 +212,8 @@ Transcripts may help debugging, but they are not the recovery mechanism.
 | Restart recovery | Request record + event log + task state; no transcript dependency |
 | Event transport | SQLite-first durable event log + job tables |
 | Mission Control shape | Integrated runtime module with API + CLI |
-| Memory/retrieval model | Layered per-agent memory plus separate code/docs/transcript retrieval planes |
-| Vectorization storage | SQLite + WAL + FTS5 + sqlite-vec + per-project index DBs |
+| Memory/retrieval model | See `07-memory-model-and-vectorization` |
+| Vectorization storage | See `07-memory-model-and-vectorization` |
 | Web UI host | Mandatory built-in runtime surface |
 
 ---
@@ -219,7 +221,7 @@ Transcripts may help debugging, but they are not the recovery mechanism.
 ## Additional Implementation Decisions
 
 The following pre-existing implementation decisions remain relevant to the runtime
-beyond the doc 12 integration.
+beyond the channel session routing integration.
 
 ### Decision 10 — Event transport
 
@@ -274,34 +276,15 @@ The built-in Web UI host is the primary operator/admin/configuration surface ove
 
 ---
 
-### Decision 14 — Memory and retrieval model
+### Decision 14 — Memory, retrieval, and vectorization
 
-**Chosen v1 stance:** Memory remains layered and per-agent. It is not the source of truth
-for request routing, publication state, or execution ownership.
+See [07-memory-model-and-vectorization.md](07-memory-model-and-vectorization.md) for the full
+memory model, retrieval planes, vectorization stack, index freshness, and failure/recovery model.
 
-Additional v1 rule:
-- Yaga supports retrieval on multiple planes: agent memory, project code index, project knowledge/docs index, and transcript search
-- vectors are an index, not the source of truth
-- code retrieval must combine structure/symbol awareness and exact lexical search with embeddings
+Summary: memory is layered and per-agent; retrieval operates on four separate planes; the default
+stack is SQLite + FTS5 + sqlite-vec; vectors are an index, not the source of truth.
 
----
-
-### Decision 15 — Vectorization and local index storage
-
-**Chosen v1 stance:** Use a lightweight local-first indexing model by default.
-
-Recommended default implementation direction:
-- SQLite + WAL
-- FTS5
-- sqlite-vec
-- per-project index databases
-- parser-aware chunking for code
-- repo-map / symbol metadata for code navigation
-- dirty queues and repair scans for freshness control
-
-Qdrant/PostgreSQL/external vector backends may exist later as optional advanced modes, but they are not the default product shape for Linux/macOS local installs.
-
-### Decision 16 — Web UI host
+### Decision 15 — Web UI host
 
 **Chosen v1 stance:** The Web UI host is mandatory.
 

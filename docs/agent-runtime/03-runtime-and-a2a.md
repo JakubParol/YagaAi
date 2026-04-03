@@ -55,45 +55,14 @@ reconstructed from transcript luck:
 
 ## Ingress Normalization Contract
 
-This contract governs **surface / channel sessions as ingress adapters** writing into the request record and owner-main path.
+The ingress normalization contract — governing how surface/channel sessions write into
+the request record and owner-main path — is defined in full in
+[04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md).
 
-### Purpose
-
-A surface adapter may receive a user message, but durable work is not owned there.
-The adapter normalizes the work into the strategic owner’s `main` endpoint.
-
-### Required behavior
-
-1. Receive the user-originated message on a publish-capable surface.
-2. Create or look up the durable `request_id` on the request record.
-3. Persist origin and reply-target metadata on the request record for recovery.
-4. Emit/request normalization into owner `main`.
-5. Continue retry responsibility until normalization is durably accepted.
-
-### What counts as normalization accepted
-
-Normalization is considered **accepted** only when:
-- the request record exists durably,
-- the strategic owner / owner-main path has acknowledged the request,
-- the adapter can safely stop retrying the normalization attempt.
-
-A transient in-memory handoff is not enough.
-
-### Idempotency rule
-
-Normalization retries must reuse the same dedup identity for the same inbound request.
-Receiving the same normalization attempt twice must not create duplicate durable requests
-or duplicate downstream work.
-
-### Ephemeral exception
-
-The normalization contract is not mandatory for truly session-bound work that is all of:
-- same-turn,
-- non-delegated,
-- does not create durable task/handoff/artifact/memory obligations,
-- does not require audit/recovery beyond ordinary transcript history.
-
-That is the exception, not the default.
+Short version: a surface adapter receives the user message, creates the durable `request_id`,
+persists reply-target metadata, and normalizes the work into the strategic owner’s `main`
+endpoint. Normalization is accepted only when the request record exists durably and the
+owner-main path has acknowledged it. Retries must be idempotent.
 
 ---
 

@@ -1,7 +1,4 @@
-# 12 — Channel Sessions and Main-Owner Routing
-
-## Status
-V3 draft architectural rule for the v1 baseline.
+# 04 — Channel Sessions and Main-Owner Routing
 
 ## Purpose
 Define the mandatory routing topology for user-originated requests that enter through channel/session surfaces such as Discord, WhatsApp, Teams, or web chat.

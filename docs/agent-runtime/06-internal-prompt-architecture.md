@@ -1,7 +1,4 @@
-# 15 — Internal Prompt Architecture
-
-## Status
-Draft HLD for Yaga’s internal prompt architecture.
+# 06 — Internal Prompt Architecture
 
 ## Purpose
 Define how Yaga should shape agent behavior internally:
@@ -95,32 +92,27 @@ If a rule truly matters for safety or correctness, it should not depend only on 
 
 ---
 
-## 3. The Best Synthesis from OpenClaw and Hermes
+## 3. Yaga Prompt Architecture Principles
 
-## From OpenClaw, we should copy:
-- runtime-owned system prompt
+The Yaga prompt architecture is built around two complementary axes:
+
+**Runtime governance axis:**
+- runtime-owned system prompt as the authoritative behavior layer
 - strict separation of prompt guidance vs hard runtime policy
 - small injected bootstrap files
 - on-demand skills loading
-- prompt modes (`full`, `minimal`, etc.)
+- prompt modes (`full`, `minimal`, `execution`)
 - memory flush before compaction
 - keeping long-tail memory out of the always-on prompt
 
-## From Hermes, we should copy:
-- clear prompt assembly layers
-- **cached stable prompt** vs **ephemeral turn-time additions**
-- better distinction between identity substrate and per-turn overlays
+**Prompt layering axis:**
+- clear prompt assembly layers with explicit ownership
+- **cached stable layers** vs **ephemeral turn-time additions**
+- clean distinction between identity substrate and per-turn overlays
 - compaction-aware prompt discipline
 - procedural learning via reusable authored skills/playbooks
 
-## Yaga synthesis
-
-Yaga should combine:
-- **OpenClaw’s runtime governance**
-with
-- **Hermes’ prompt layering discipline**
-
-That is likely the strongest prompt architecture available from the two systems.
+These two axes together define the Yaga prompt stack.
 
 ---
 

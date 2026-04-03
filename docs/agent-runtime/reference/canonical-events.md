@@ -14,7 +14,7 @@ even when the request record remains the primary routing/publication store.
 
 ## Request / Routing / Publication Events
 
-These events make the doc 12 model observable without turning request state into a
+These events make the channel session routing model observable without turning request state into a
 second workflow engine.
 
 | Event Type | Emitted by | Key fields | Meaning |

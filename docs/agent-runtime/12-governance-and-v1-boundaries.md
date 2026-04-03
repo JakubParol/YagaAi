@@ -12,7 +12,7 @@ A human must have explicit control over:
 | Incident review | Post-failure analysis and root cause |
 | Promoting shared facts | Before a proposed fact enters the shared-facts layer |
 | Approving platform-level changes | Runtime policy, topology rules, memory governance |
-| Approving controlled topology exceptions | Before any exception to the doc 12 routing baseline is allowed |
+| Approving controlled topology exceptions | Before any exception to the channel session routing baseline is allowed |
 
 These control points are not optional.
 
@@ -37,7 +37,7 @@ Self-improvement matters, but at v1 it does not mean autonomous self-rewriting.
 
 ## Controlled Topology Exceptions
 
-The doc 12 model is the default.
+The channel session routing model (see [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)) is the default.
 Any deviation must be explicit, bounded, and approved.
 
 ### Approved-exception catalog

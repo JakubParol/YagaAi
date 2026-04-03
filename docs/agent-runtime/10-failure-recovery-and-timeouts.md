@@ -10,7 +10,7 @@ For every important failure mode, the system must define:
 - a **bounded retry / escalation path**
 - an explicit terminal or near-terminal outcome
 
-The integration of doc 12 adds one important rule:
+The channel session routing model (see [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)) adds one important rule:
 
 > **Task success, callback success, and human-visible publication success are separate recovery concerns.**
 
