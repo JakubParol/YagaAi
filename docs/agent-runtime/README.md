@@ -7,9 +7,7 @@ sources of truth live.
 Most files here describe the architecture itself.
 One file (`11-implementation-decisions.md`) records blocking implementation choices.
 One file (`12-channel-sessions-and-main-owner-routing.md`) defines the routing topology for
-surface-originated durable work.
-One file (`12-channel-sessions-and-main-owner-routing_V4 - tightened integration plan after V3 review.md`)
-records the integration plan used to absorb that topology into the rest of the corpus.
+surface-originated durable work and its integration into the rest of the corpus.
 
 ## What Is the Agent Runtime
 
@@ -29,11 +27,12 @@ It is closer to a distributed workflow engine for agents than to a general-purpo
 ## How to Read These Docs
 
 For the architecture mental model, start with:
-1. [01-system-overview.md](01-system-overview.md)
-2. [02-core-model.md](02-core-model.md)
-3. [03-runtime-and-a2a.md](03-runtime-and-a2a.md)
-4. [04-ownership-lifecycle-and-state.md](04-ownership-lifecycle-and-state.md)
-5. [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md)
+1. [00-input-one-pager.md](00-input-one-pager.md)
+2. [01-system-overview.md](01-system-overview.md)
+3. [02-core-model.md](02-core-model.md)
+4. [03-runtime-and-a2a.md](03-runtime-and-a2a.md)
+5. [04-ownership-lifecycle-and-state.md](04-ownership-lifecycle-and-state.md)
+6. [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md)
 
 If you are implementing the model, read this early as well:
 - [11-implementation-decisions.md](11-implementation-decisions.md)
@@ -44,6 +43,7 @@ The `reference/` directory contains canonical definitions you can link to from a
 
 | File | What it covers |
 |------|---------------|
+| [00-input-one-pager.md](00-input-one-pager.md) | Vision, thesis, build principles, and v1 priorities |
 | [01-system-overview.md](01-system-overview.md) | High-level mental model, agent roles, surface vs owner-main topology |
 | [02-core-model.md](02-core-model.md) | Definitions of entities including request, task, flow, handoff, memory |
 | [03-runtime-and-a2a.md](03-runtime-and-a2a.md) | Ingress normalization contract, A2A handoff contract, callbacks |
@@ -56,7 +56,6 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [10-governance-and-v1-boundaries.md](10-governance-and-v1-boundaries.md) | v1 scope, non-goals, control points, edge-case tests |
 | [11-implementation-decisions.md](11-implementation-decisions.md) | Blocking implementation decisions, especially for request/routing/publication |
 | [12-channel-sessions-and-main-owner-routing.md](12-channel-sessions-and-main-owner-routing.md) | Mandatory topology for surface-originated durable work |
-| [12-channel-sessions-and-main-owner-routing_V4 - tightened integration plan after V3 review.md](12-channel-sessions-and-main-owner-routing_V4%20-%20tightened%20integration%20plan%20after%20V3%20review.md) | Working integration plan used to align the rest of the docs |
 
 ## Reference
 

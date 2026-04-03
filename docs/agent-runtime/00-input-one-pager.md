@@ -1,361 +1,345 @@
-# Agent Runtime — One Pager
+# Agent Runtime — Vision, Thesis, and Build Principles
 
-## What We Are Building and Why
-We are building our own opinionated multi-agent runtime: a workflow-first control plane for agent work that is more predictable, operationally lighter, and better aligned with our workflow than today’s heavy agent frameworks.
+## Short Name
 
-The problem is not that there are no agents on the market. It is that existing systems are too heavy, too opaque, and too poorly shaped for owner-first work with durable agents, reliable handoffs, disciplined memory, and strong observability.
+- **Canonical name:** Agent Runtime
+- **Plain-English descriptor:** a lightweight control plane for developer agents
+- **Technical descriptor:** an event-driven, workflow-first multi-agent runtime
 
-## Target Workload
-The system is designed for:
-- owner-first work with durable agent identities,
-- asynchronous tasks with callbacks,
-- multi-agent handoffs across orchestration, execution, review, and research,
-- workflows that require auditability, replay, recovery, and memory continuity.
+This is a better description than just “orchestrator” or “agent framework”.
+It does more than route messages, but it is also much narrower and lighter than a general-purpose framework.
 
-It is not designed as:
-- a universal chatbot,
-- an agent marketplace,
-- a full enterprise BPM suite,
-- a v1 system built for multi-tenancy and broad product-market distribution.
+---
 
-## Main Use Case
-Several distinct agents collaborate on development and research, with one main agent that talks to the user and delegates work.
+## What We Are Building
 
-Target setup:
-- **James** — main agent; user interaction, continuity, delegation, coordination
-- **Naomi** — senior developer; implementation, dev memory, self-improvement
-- **Amos** — senior QA; review, verify, quality escalation
-- **Alex** — senior researcher; research, synthesis, return to James
+We are building a system in the same broad family as OpenClaw, but shaped much more tightly around our own workflow and standards.
 
-## Architectural Thesis
-The core value comes from combining:
-- separated agents with their own memory and responsibility,
-- simple and reliable A2A,
-- event-centric orchestration,
-- controlled self-improvement,
-- boringly reliable task relay,
-- strong operator UX.
+At the highest level, we are building:
 
-This should be closer to a **distributed workflow engine for agents** than to a general-purpose agent framework.
+- a runtime for **distinct agents** with clear responsibilities,
+- a control plane for **developer-focused agent work**,
+- an architecture that treats **A2A communication, recovery, and observability** as core product features,
+- a system where **Mission Control** becomes an integral part of the development workflow,
+- and a platform where agents can **remember, improve, and operate reliably over time**.
 
-## System Boundary
-This is a runtime/control plane for agent work.
+This is **not** meant to be:
 
-At the start, it is responsible for:
-- routing commands and events,
-- task lifecycle,
-- ownership and callback handling,
-- per-agent memory,
-- audit/replay/debugging,
-- controlled improvement loops,
-- workflow state for the most important flows.
+- a universal chatbot platform,
+- a generic marketplace of agents,
+- a heavy enterprise BPM suite,
+- a “one giant session with many personas hidden in prompts”,
+- or a clever demo that works only on the happy path.
 
-At the start, it does **not** try to be:
-- a full enterprise scheduler,
-- an integration marketplace,
-- a complete IDE host,
-- an autonomous system that rebuilds agent topology on its own,
-- a general framework for everything.
+---
 
-## Core Model
-### 1. Agents, Runtime, and Separation
-This should be an environment of cooperating operational entities, not one agent with multiple personas hidden in prompts.
+## Core Thesis
 
-Important rule: **agent != execution runtime**.
-The agent is the durable owner of decisions, memory, and responsibility. The runtime — for example Claude Code, Codex, or ACP — is an execution tool.
+We want something that is:
 
-If a worker or executor exists, it is subordinate to the owner, not an independent domain owner.
+- **simple**,
+- **lightweight**,
+- **practical**,
+- **inspectable**,
+- and above all **working in the real world**.
 
-Core entities:
-- **agent** — durable role, memory, responsibility
-- **session** — current execution or conversation context
-- **task** — concrete unit of work
-- **flow** — progression spanning tasks, events, and handoffs
-- **handoff** — transfer of work and execution responsibility
-- **memory** — persisted agent context
-- **artifact** — work result passed further
+The design bias is deliberate:
 
-Mission Control-specific distinctions:
-- **work item / US** — domain work object in Mission Control
-- **task** — execution unit attached to a work item or flow
-- **handoff** — work transfer between owners or executors
-- **flow** — progression spanning steps, statuses, and decisions
+- **reliability over cleverness**,
+- **explicit ownership over hidden magic**,
+- **events over transcript inference**,
+- **recovery over wishful thinking**,
+- **operator clarity over abstraction theatre**.
 
-Each agent must have separated:
-- context,
-- memory,
-- task ownership,
+If a design is elegant on paper but hard to debug at 2 a.m., it is the wrong design.
+
+---
+
+## Primary Use Case
+
+The first serious use case is **developer agents doing real delivery work**.
+
+Target team shape:
+
+- **James** — strategic owner, user interaction, delegation, final accountability
+- **Naomi** — implementation and development execution
+- **Amos** — review, QA, verification, quality escalation
+- **Alex** — research, synthesis, option analysis
+
+This means the runtime is optimized for flows such as:
+
+- research,
+- implementation,
+- code review,
+- verification,
+- escalation,
+- and final response to the human.
+
+The human stays in control. Agents do real work, but they do it inside a system with ownership, callbacks, memory, and recovery.
+
+---
+
+## Mission Control Is Integral, Not Optional
+
+Mission Control is not a side tool.
+It is the first serious domain workflow layer inside the runtime.
+
+Mission Control should be the source of truth for the **development workflow state**, including:
+
+- user stories,
+- tasks,
+- review loops,
+- verify loops,
+- status transitions,
+- and escalation thresholds.
+
+The Agent Runtime should remain responsible for:
+
+- request ingress,
+- ownership and delegation,
+- A2A handoffs,
+- callback routing,
+- reply publication state,
 - event history,
-- tool and permission scope where that affects safety or predictability.
+- per-agent memory,
+- observability and recovery.
 
-The trade-off is explicit: more separation gives more control, but increases coordination, synchronization, and conflict-resolution cost.
+Short version:
 
-### 2. Runtime and Communication Model
-A2A should not be modeled primarily as free-form chat.
-The core contract is:
-- **commands** — intent to perform an action
+- **Mission Control owns dev workflow state**
+- **Agent Runtime owns agent coordination and runtime semantics**
+
+Together, they form one coherent system.
+
+---
+
+## A2A Is a Priority, Not a Nice-to-Have
+
+Agent-to-agent communication must be treated as a serious operational system.
+Not as free-form chat. Not as “hope the other agent saw it”.
+
+The core primitives are:
+
+- **commands** — intent to do something
 - **events** — fact that something happened
-- **statuses** — canonical snapshot of task or work-item state
-- **artifacts** — result or reference to a result
+- **statuses** — canonical state snapshot
+- **artifacts** — produced work results
 
-A2A should be designed from day one with:
-- idempotency,
-- deduplication,
-- correlation IDs,
-- causation IDs,
-- contract versioning.
+Every non-trivial handoff should carry explicit structure such as:
 
-Each handoff should include a minimal contract:
-- owner
-- requester
-- goal
-- definition of done
-- input artifacts or input context
-- callback target
-- priority
-- deadline or SLA, if it exists
-
-A handoff does not end at dispatch. It is not complete until it is explicitly accepted, rejected, or claimed, with a concrete status and reason.
-
-## Ownership and Accountability
-Every task and flow should explicitly store:
 - owner,
 - requester,
-- optional executor / worker,
+- goal,
+- definition of done,
 - callback target,
-- status,
-- related events and artifacts.
+- priority,
+- execution mode,
+- request link when applicable.
 
-Ownership must not be inferred from chat context.
+A handoff is **not complete** when it is sent.
+It is complete only when it is **accepted** or **rejected**.
 
-In practice:
-- **James** owns the strategic conversation, delegation, and final outcome toward the user
-- **Alex** owns research tasks
-- **Naomi** owns implementation tasks and the execution plan in the dev flow
-- **Amos** owns quality, review, and verify
+That one rule kills a lot of fake reliability.
 
-This creates a deliberate split between:
-- **final accountability** — James toward the user
-- **execution ownership** — the specialist within their domain
+---
 
-## Execution Model
-At the start, the system supports two modes:
-- **session-bound / short-turn synchronous** — short interactions that need quick ACK or short answers
-- **detached / async durable** — background tasks with callback, retry, and full event trail
+## Event-Driven by Default
 
-Detached runs are first-class. Best-effort fire-and-forget without an explicit callback contract should not be the default for important work.
+The system should be built around events.
+Events are the nervous system of the runtime.
 
-## Memory Model
-Memory should be layered and per-agent.
+We want events for:
 
-Minimal split:
-- **working memory** — current operational context
-- **episodic memory** — history of completed tasks and outcomes
-- **semantic / long-term memory** — durable knowledge, decisions, preferences, and patterns
-- **procedural memory / skills** — validated ways of operating
-- **event history** — execution log, not the same thing as memory
+- request ingress,
+- normalization,
+- handoff dispatch and acceptance,
+- task lifecycle,
+- callback delivery,
+- reply publication,
+- memory writes,
+- retries,
+- timeouts,
+- reconciliation,
+- escalation,
+- and audit.
 
-Write and correction policy must stay selective:
-- not every event belongs in long-term memory
-- durable memory writes should be justified
-- incorrect or outdated entries must be correctable or retractable
-- event history remains the source of execution trace, but does not replace memory
+Why this matters:
 
-If a shared-facts layer exists, it needs governance:
-- who can propose facts,
-- who can approve them,
-- what lifecycle and versioning they have,
-- when an agent may rely on them by default.
+- events make retries tractable,
+- events make watchdogs possible,
+- events make replay possible,
+- events make debugging possible,
+- events make cross-agent reasoning visible,
+- events let us recover from failure without reading transcript soup.
 
-## Self-Improvement Loop
-Self-improvement matters, but at the start it must not mean autonomous self-rewriting.
+If the system cannot explain what happened from durable records, it is not ready.
 
-Minimal v1 version:
-- the agent may update local working notes,
-- the agent may propose improvements,
-- the system stores an improvement candidate,
-- the change goes to review,
-- there is audit trail, versioning, and rollback.
+---
 
-We need to distinguish between:
-- **local notes / working heuristics**
-- **memory updates**
-- **behavior changes** — prompts, procedures, routing heuristics, skill library
-- **platform changes** — runtime policy, contracts, topology rules, memory governance
+## We Design for Failure, Not for Demos
 
-At the start, self-improvement should mainly target behavior, not platform.
+LLMs are flaky.
+Runtimes crash.
+Networks fail.
+Callbacks go missing.
+Adapters restart.
+Messages duplicate.
+Publication may fail after execution succeeds.
 
-## Observability, Auditability, and Source of Truth
-The system must be inspectable end to end.
+So the system must assume failure as normal.
 
-Minimum:
-- structured events,
-- correlation IDs,
-- causation IDs,
-- dedup keys,
-- per-run timeline,
-- tool call ledger,
-- memory write ledger,
-- prompt/context snapshot,
-- policy/version lineage,
-- replay/debug path.
+We want first-class support for:
 
-Source of truth must be explicit:
-- **status and ownership** — one workflow-state layer backed by tasks and work items
-- **history and facts** — event history
-- **durable knowledge** — memory
-- **work result** — artifacts
+- retries,
+- deduplication,
+- watchdogs,
+- execution timeouts,
+- workflow timeouts,
+- callback recovery,
+- reconciliation,
+- fallback paths,
+- escalation,
+- and replay.
 
-Memory must never be the source of truth for operational state.
+A core invariant:
 
-## Mission Control as the First Domain Implementation
-Mission Control is a first-class operational layer on top of the generic task/flow model.
+> **Task success, callback success, and human-visible reply success are separate concerns.**
 
-The core runtime defines universal primitives: agent, session, task, flow, status, memory, event, and artifact. Mission Control is the first privileged domain implementation of that model for the development workflow.
+“Done” does not automatically mean “the user got the answer”.
 
-User stories, tasks, review, and verify are not architectural exceptions; they are domain-level specializations of the generic `task / flow / status / artifact / ownership` model.
+---
 
-Mission Control should be the source of truth for workflow state in the dev flow. It is not the domain owner instead of agents, but it may act as the active orchestrator/state machine for status transitions and process rules.
+## Ownership Must Stay Explicit
 
-## Main Operational Flows
-### Research
-1. The user asks James for research.
-2. James delegates it to Alex.
-3. Alex performs the research, stores relevant findings in memory, and produces a result artifact.
-4. Alex returns the result to James.
-5. James reviews it and may ask for clarification.
-6. James returns a final answer to the user.
+We do not want invisible ownership derived from chat history.
 
-### Implementation
-1. The user asks James for a development task.
-2. James delegates it to Naomi.
-3. Naomi performs the work using an appropriate coding runtime, such as Claude Code or Codex, for example through ACP.
-4. Naomi records the execution trail, strengthens memory around her specialization, and returns the result to James.
-5. James decides whether the result is ready or needs another pass.
+We want explicit separation between:
 
-### QA
-1. James or the system flow passes the result to Amos.
-2. Amos performs review or verify.
-3. Amos records comments, outcome, and status.
-4. If needed, he sends the work back to Naomi.
-5. If the issue does not converge, it escalates to James.
+- **strategic owner** — who owns the request as a whole,
+- **execution owner** — who owns the delegated work,
+- **callback target** — where operational results return,
+- **reply target** — where the human-visible answer should be published.
 
-## Development Flow Through Mission Control
-James can assign Naomi a user story or another work item.
+For surface-originated durable work, the topology should stay strict:
 
-Target flow:
-1. James assigns a **US** to Naomi.
-2. Naomi takes ownership of the US and sets it to **In Progress**.
-3. Naomi analyzes the user story.
-4. Naomi creates a plan and stores it as tasks under the US.
-5. Each task has status: **In Progress / Done / Blocked**.
-6. Naomi works through the tasks until they are completed or blocked.
-7. When all tasks are complete, Naomi moves the US to **Code Review** and assigns Amos.
-8. James is notified via an explicit callback or event.
+- inbound through a surface/channel session,
+- durable coordination through the owner’s `main`,
+- specialist delegation `main-to-main`,
+- human-visible reply through stored reply-target metadata.
 
-A minimal task or handoff lifecycle should be explicit, for example:
-**Created -> Accepted -> In Progress -> Review -> Verify -> Done / Blocked / Escalated / Cancelled**
+That keeps ownership coherent across WhatsApp, Discord, web, and future surfaces.
 
-We also need to define explicitly:
-- which roles may perform which status transitions,
-- which transitions are automatic,
-- which transitions require explicit acceptance.
+---
 
-### Code Review Loop
-1. Amos performs code review.
-2. If there are comments, he adds them, moves the US back to **In Progress**, and reassigns Naomi.
-3. Naomi fixes the issues and sends the work back to review.
-4. There are at most **3 Code Review loops**.
-5. If the issue is still not closed after 3 loops, it escalates to James.
+## Memory and Controlled Self-Improvement
 
-In practice, this limit means a quality, scope, or ownership deadlock — not just a raw counter.
+Each agent should have its own memory.
+Memory is part of the system’s leverage, but it must stay disciplined.
 
-### Verify Loop
-1. If Code Review passes, the US moves to **Verify** and is assigned to Amos.
-2. Amos performs verify.
-3. If he finds a problem, he records comments in the US, moves the work item back to **In Progress**, and reassigns Naomi.
-4. Naomi fixes the issue and returns it to the appropriate step.
-5. The flow continues until **Done**, **Blocked**, or **Escalated**.
+We want layered memory:
 
-Work items, tasks, review loops, verify loops, and escalations are not UI details. They are one of the main reasons the system exists.
+- working memory,
+- episodic memory,
+- semantic memory,
+- procedural memory.
 
-## Failure Modes and Recovery
-The system must be designed for more than the happy path.
+We also want a **controlled self-improvement loop**:
 
-At minimum it must handle:
-- delivery issues such as missing callbacks, duplicate events, or out-of-order delivery,
-- execution issues such as worker crashes, orphaned work, partial tool failures, or incomplete artifacts,
-- state issues such as ownership conflicts, status conflicts, or accepted tasks with no progress,
-- side effects completed without confirmation back to the workflow.
+- agents learn from outcomes,
+- agents propose better procedures or heuristics,
+- changes are reviewed,
+- validated improvements are promoted,
+- everything stays auditable and reversible.
 
-For each such case there must be:
-- a recovery owner,
-- a default action: retry / reassign / escalate / mark blocked,
-- an explicit terminal state or compensation path.
+Important constraint:
 
-We also need to distinguish between:
-- **execution timeout** — a problem at the runtime or worker level
-- **workflow / SLA timeout** — lack of expected progress in the process
+- memory is **not** workflow state,
+- memory is **not** reply-routing truth,
+- memory is **not** a substitute for proper runtime records.
 
-This means idempotency, deduplication, retry, semantic timeouts, and replay are part of the architectural core.
+No uncontrolled self-rewriting magic. No “the model probably remembers”.
 
-## Human Control Points
-A human must have explicit control points for:
-- approving published changes,
-- rolling back changes,
-- overriding policy,
-- incident review,
-- promoting shared facts,
-- approving platform-level changes.
+---
 
-## Non-Goals, v1 Scope, and Success Criteria
-v1 is internal-first.
+## Simplicity Rules
 
-v1 primarily supports:
-- 4 agents,
-- 3 main flow types: research, development, and QA,
-- a privileged development workflow in Mission Control.
+Our system should prefer a small number of strong primitives over a large number of vague features.
 
-v1 does not try to solve:
-- broad onboarding,
-- multi-tenancy,
-- agent marketplaces,
-- product-grade support,
-- full capability parity with existing platforms,
-- an autonomous self-modifying production loop,
-- a full declarative workflow DSL when a simpler event/state contract is enough.
+Practical design rules:
 
-The system should not try to win on feature breadth at the start. It should win operationally.
+- keep surface adapters thin,
+- keep ownership explicit,
+- keep callback contracts explicit,
+- keep reply routing explicit,
+- keep Mission Control as the dev workflow authority,
+- keep durable records queryable,
+- keep recovery paths boring and predictable,
+- keep agent memory separate from operational truth,
+- keep runtime concepts understandable to humans operating the system.
 
-At the v1 level, success means:
-- handoffs between agents are predictable and visible end-to-end,
-- for each task we can unambiguously identify owner, status, and callback target,
-- an operator can replay a flow and understand what happened without digging through session chaos,
-- per-agent memory improves future work without collapsing into an execution log,
-- execution failures can be retried or escalated safely.
+If a feature creates complexity without making reliability, recovery, or leverage better, it should probably not exist.
 
-v1 should also pass contract-style edge-case tests for:
-- duplicate event,
-- lost callback,
-- worker crash mid-task,
-- review reassignment,
-- stale ownership conflict,
-- retry after partial artifact,
-- replay after failure.
+---
 
-## MVP Success Metrics
-- callback success rate,
-- handoff completion rate,
-- mean time to debug a failed run,
-- duplicate-safe processing rate,
-- share of tasks requiring manual recovery.
+## Non-Goals for v1
 
-## Bottom Line
-This is a work system for separated agents with local memory, explicit ownership, and controlled self-improvement.
+v1 is not trying to solve everything.
 
-Success will be measured by whether:
-- handoffs are predictable,
-- ownership is explicit,
-- each agent has its own memory and history,
-- the whole thing is operationally simpler than existing frameworks,
-- and the operator can quickly answer: who owns this, what happened, where did the task get stuck, and where should the result return.
+It is **not**:
+
+- a multi-tenant platform,
+- an agent marketplace,
+- a broad no-code workflow builder,
+- a universal protocol compatibility layer,
+- a full enterprise automation suite,
+- or an autonomous self-governing agent society.
+
+v1 is about getting the core right:
+
+- distinct agents,
+- serious A2A,
+- reliable execution handoffs,
+- Mission Control integration,
+- durable memory,
+- clear observability,
+- and graceful failure handling.
+
+---
+
+## What Good Looks Like
+
+We are done when the system can support real developer work and still stay understandable.
+
+That means:
+
+- we always know who owns the work,
+- we can always see what happened,
+- we can recover from partial failure,
+- we can trust retries and dedup,
+- Mission Control and the runtime do not fight over state,
+- agents improve over time without becoming chaotic,
+- adding a new surface does not create a new ownership model,
+- and operators do not need transcript archaeology to debug a broken run.
+
+This should feel less like a flashy agent demo and more like a dependable operating system for agent work.
+
+---
+
+## Build Priorities
+
+In order:
+
+1. **Reliable A2A and ownership semantics**
+2. **Event model, callbacks, retries, and watchdogs**
+3. **Mission Control integration as first-class dev workflow**
+4. **Observability, audit, and replay**
+5. **Per-agent memory and controlled self-improvement**
+6. **Additional surfaces, tooling, and optimizations**
+
+If priority 6 harms priority 1, 2, or 3, we are doing it backwards.
+
+---
+
+## One-Sentence Definition
+
+**Agent Runtime is a lightweight, event-driven control plane for developer agents: it coordinates distinct agents, makes A2A reliable, uses Mission Control as the development workflow engine, and treats memory, callbacks, and recovery as first-class concerns.**
