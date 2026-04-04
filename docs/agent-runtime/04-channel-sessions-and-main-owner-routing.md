@@ -664,7 +664,7 @@ However, it does require request-level and conversation-level clarity.
 
 ### Default continuity rules
 - A new follow-up message should create a new request unless the strategic owner explicitly merges it into an existing one.
-- Cross-surface continuation should not silently mutate an existing reply target; it should create an explicit link or transfer decision.
+- Cross-surface continuation should not silently mutate an existing reply target; any transfer decision must be explicit, recorded, and processed through the strategic owner's `main`.
 - Multiple durable requests may exist within one broader conversation scope, but each must remain uniquely identifiable and auditable.
 
 These defaults prevent ambiguous ownership and accidental cross-request mutation.
