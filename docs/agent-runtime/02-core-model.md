@@ -16,6 +16,43 @@
 | **project index** | Durable retrieval/index state for one managed project | Yes | runtime | project index store |
 | **work item / US** | Domain work object in Mission Control | Yes | assigned agent | Mission Control |
 
+## Event Storming Model
+
+The system maps to Event Storming vocabulary as follows:
+
+**Aggregates** (validate Commands, emit Domain Events):
+
+```
+Agent | Request | Task | Handoff | Flow
+```
+
+**Bounded Contexts:**
+
+```
+Agent Runtime   — owns: request routing, A2A, callbacks, events, memory, indexing
+Mission Control — owns: dev workflow state (US, tasks, review/verify loops)
+```
+
+**External Systems** (relative to the Agent Runtime Bounded Context):
+
+```
+Surface adapters: WhatsApp, Discord, web, CLI
+```
+
+**Fundamental invariant:**
+
+```
+Command → Aggregate validates → Domain Event emitted
+```
+
+No state change occurs without a Domain Event. A rejected Command produces a
+`command.rejected` Domain Event. There are no silent operations.
+
+See [reference/glossary.md](reference/glossary.md) for definitions of Aggregate,
+Bounded Context, Domain Event, Policy, Read Model, and External System.
+
+---
+
 ## Entity Definitions
 
 ### Agent
@@ -276,7 +313,7 @@ Harness choice does not redefine agent identity, task ownership, or workflow own
 
 - **Request store** answers: who owns the request strategically, where should the human-visible reply go, was it published successfully?
 - **Task / flow systems** answer: what work is currently in progress, who owns that execution work, what is the current task/US status?
-- **Event log** answers: what happened, in what order, and why?
+- **Event log** answers: what happened, in what order, and why — the backbone from which watchdogs arm, Policies react, retries schedule, and recovery paths operate. Read Models (operator views, status projections) are derived from it.
 - **Memory** answers: what should the agent remember for future work?
 - **Project index store** answers: what retrieval/index state exists for code/docs, how fresh it is, and what retrieval artifacts are available
 
