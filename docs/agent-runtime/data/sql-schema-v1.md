@@ -1,0 +1,61 @@
+# SQL Schema v1
+
+## Tables
+
+### `requests`
+- `id TEXT PK`
+- `correlation_id TEXT NOT NULL`
+- `origin TEXT NOT NULL`
+- `status TEXT NOT NULL DEFAULT 'received'`
+- `reply_target_channel TEXT NOT NULL`
+- `reply_target_session_key TEXT NOT NULL`
+- `created_at TIMESTAMP NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
+
+Indexes:
+- `UNIQUE(correlation_id)`
+- `INDEX(status, created_at)`
+
+### `tasks`
+- `id TEXT PK`
+- `request_id TEXT NOT NULL FK -> requests(id)`
+- `owner_agent TEXT NOT NULL`
+- `state TEXT NOT NULL`
+- `priority TEXT NOT NULL DEFAULT 'normal'`
+- `created_at TIMESTAMP NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
+
+Indexes:
+- `INDEX(request_id, state)`
+
+### `handoffs`
+- `id TEXT PK`
+- `task_id TEXT NOT NULL FK -> tasks(id)`
+- `from_agent TEXT NOT NULL`
+- `to_agent TEXT NOT NULL`
+- `status TEXT NOT NULL`
+- `dedupe_key TEXT NOT NULL`
+- `created_at TIMESTAMP NOT NULL`
+
+Indexes:
+- `UNIQUE(dedupe_key)`
+- `INDEX(to_agent, status)`
+
+### `event_log`
+- `event_id TEXT PK`
+- `event_type TEXT NOT NULL`
+- `aggregate_type TEXT NOT NULL`
+- `aggregate_id TEXT NOT NULL`
+- `correlation_id TEXT NOT NULL`
+- `causation_id TEXT`
+- `payload_json TEXT NOT NULL`
+- `occurred_at TIMESTAMP NOT NULL`
+
+Indexes:
+- `INDEX(aggregate_type, aggregate_id, occurred_at)`
+- `INDEX(correlation_id, occurred_at)`
+
+## Migration Strategy
+- Baseline: `alembic revision --autogenerate -m "schema v1 baseline"`.
+- Forward-only migrations, no destructive rollback in prod.
+- Data migrations separated from schema migrations.
