@@ -10,6 +10,10 @@ For every important failure mode, the system must define:
 - a **bounded retry / escalation path**
 - an explicit terminal or near-terminal outcome
 
+Recovery paths are Policies: automatic reactions to Domain Events with named owners and
+bounded retry clauses. Each failure mode below has a corresponding named Policy in
+[reference/policies.md](reference/policies.md) where one exists.
+
 The channel session routing model (see [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)) adds one important rule:
 
 > **Task success, callback success, and human-visible publication success are separate recovery concerns.**
@@ -20,51 +24,51 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 
 ### 1. Inbound / Normalization Failures
 
-| Failure | Description | Recovery owner | Default action |
-|---------|-------------|----------------|----------------|
-| Duplicate inbound normalization | Same inbound request normalized more than once | owner-side request path | Dedup by request-level key; no duplicate work |
-| Adapter failure before durable acceptance | Surface adapter received the message but owner path did not durably accept it | surface adapter | Retry normalization with same dedup identity |
-| Main endpoint unavailable during normalization | Owner-facing `main` path unreachable/unavailable | surface adapter / runtime | Retry until timeout policy, then escalate |
-| Normalization rejected | Owner path explicitly rejects malformed or invalid request | owner-side runtime | Emit rejection; surface may notify/fail visibly if needed |
+| Failure | Description | Recovery owner | Default action | Policy |
+|---------|-------------|----------------|----------------|--------|
+| Duplicate inbound normalization | Same inbound request normalized more than once | owner-side request path | Dedup by request-level key; no duplicate work | — |
+| Adapter failure before durable acceptance | Surface adapter received the message but owner path did not durably accept it | surface adapter | Retry normalization with same dedup identity | `RetryNormalizationOnAdapterFailure` |
+| Main endpoint unavailable during normalization | Owner-facing `main` path unreachable/unavailable | surface adapter / runtime | Retry until timeout policy, then escalate | `RetryNormalizationOnAdapterFailure` |
+| Normalization rejected | Owner path explicitly rejects malformed or invalid request | owner-side runtime | Emit `command.rejected` Domain Event; surface may notify/fail visibly if needed | — |
 
 ### 2. Handoff / Callback Failures
 
-| Failure | Description | Recovery owner | Default action |
-|---------|-------------|----------------|----------------|
-| Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout |
-| Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op |
-| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, block/escalate |
-| Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work |
-| Callback arrives after reassignment | Prior owner/executor returns late result after ownership moved | strategic owner | Reconcile against current authority; record late arrival |
+| Failure | Description | Recovery owner | Default action | Policy |
+|---------|-------------|----------------|----------------|--------|
+| Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout | `WatchAcceptanceTimeout` → `EscalateOnHandoffTimeout` |
+| Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op | — |
+| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, block/escalate | `WatchOrphanedWork` → `EscalateOnOrphanTimeout` |
+| Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work | — |
+| Callback arrives after reassignment | Prior owner/executor returns late result after ownership moved | strategic owner | Reconcile against current authority; record late arrival | — |
 
 ### 3. Execution / Workflow Failures
 
-| Failure | Description | Recovery owner | Default action |
-|---------|-------------|----------------|----------------|
-| Worker crash | Execution runtime terminates mid-task | task owner | Retry execution or reassign executor |
-| Orphaned work | Task accepted but no progress events for defined period | task owner / James | Workflow timeout, prompt owner, escalate if needed |
-| Partial tool failure | Some tool calls succeed, others fail | task owner | Block with explicit reason; decide retry or escalate |
-| Incomplete artifact | Artifact produced but fails validation | task owner / reviewer | Return to `In Progress` with error |
-| Status / ownership conflict | Durable state disagrees about current owner or status | James / MC | Use authoritative store, emit reconciliation event |
+| Failure | Description | Recovery owner | Default action | Policy |
+|---------|-------------|----------------|----------------|--------|
+| Worker crash | Execution runtime terminates mid-task | task owner | Retry execution or reassign executor | — |
+| Orphaned work | Task accepted but no progress events for defined period | task owner / James | Workflow timeout, prompt owner, escalate if needed | `WatchOrphanedWork` → `EscalateOnOrphanTimeout` |
+| Partial tool failure | Some tool calls succeed, others fail | task owner | Block with explicit reason; decide retry or escalate | — |
+| Incomplete artifact | Artifact produced but fails validation | task owner / reviewer | Return to `In Progress` with error | — |
+| Status / ownership conflict | Durable state disagrees about current owner or status | James / MC | Use authoritative store, emit reconciliation Domain Event | — |
 
 ### 4. Reply Routing / Publication Failures
 
-| Failure | Description | Recovery owner | Default action |
-|---------|-------------|----------------|----------------|
-| Stale or missing reply target | Stored reply destination is invalid | strategic owner / request-state path | Mark `fallback_required` or retarget explicitly |
-| Publication failure after specialist success | Task is done but human reply was not published | strategic owner / request-state path | Retry / fallback / escalate |
-| Ambiguous publication after retry | Outcome unknown; reply may or may not have been delivered | strategic owner / request-state path | Mark `unknown`; reconcile before further publish |
-| Publish acknowledgement missing | Publish attempt started but terminal result never confirmed | request-state path | Mark `attempted` or `unknown`; bounded retry or reconcile |
-| Late publish success after ambiguity | Prior ambiguous attempt later proves successful | request-state path | Reconcile state; avoid duplicate publication |
-| Fallback invocation required | Primary target no longer safe/valid | strategic owner / operator | Apply approved fallback or escalate |
+| Failure | Description | Recovery owner | Default action | Policy |
+|---------|-------------|----------------|----------------|--------|
+| Stale or missing reply target | Stored reply destination is invalid | strategic owner / request-state path | Mark `fallback_required` or retarget explicitly | — |
+| Publication failure after specialist success | Task is done but human reply was not published | strategic owner / request-state path | Retry / fallback / escalate | `RetryPublicationOnFailure` |
+| Ambiguous publication after retry | Outcome unknown; reply may or may not have been delivered | strategic owner / request-state path | Mark `unknown`; reconcile before further publish | `WatchPublicationTimeout` → `InvokeFallbackOnPublicationTimeout` |
+| Publish acknowledgement missing | Publish attempt started but terminal result never confirmed | request-state path | Mark `attempted` or `unknown`; bounded retry or reconcile | `WatchPublicationTimeout` → `InvokeFallbackOnPublicationTimeout` |
+| Late publish success after ambiguity | Prior ambiguous attempt later proves successful | request-state path | Reconcile state; avoid duplicate publication | — |
+| Fallback invocation required | Primary target no longer safe/valid | strategic owner / operator | Apply approved fallback or escalate | `InvokeFallbackOnPublicationTimeout` |
 
 ### 5. Conversation Continuity Failures
 
-| Failure | Description | Recovery owner | Default action |
-|---------|-------------|----------------|----------------|
-| User follow-up while work is in flight | New message arrives before prior request closes | strategic owner | New request by default; explicitly merge if needed |
-| Cross-surface continuation | Same human continues on another surface | strategic owner | Create new request or explicit transfer/merge decision |
-| Reply target mutated implicitly | Target changed by side effect or convenience logic | strategic owner / operator | Reject implicit mutation; require explicit audit event |
+| Failure | Description | Recovery owner | Default action | Policy |
+|---------|-------------|----------------|----------------|--------|
+| User follow-up while work is in flight | New message arrives before prior request closes | strategic owner | New request by default; explicitly merge if needed | — |
+| Cross-surface continuation | Same human continues on another surface | strategic owner | Create new request or explicit transfer/merge decision | — |
+| Reply target mutated implicitly | Target changed by side effect or convenience logic | strategic owner / operator | Reject implicit mutation; require explicit audit Domain Event | — |
 
 ---
 
@@ -88,16 +92,19 @@ Using one generic dedup story across all three domains creates bugs.
 - **Definition:** runtime/worker has not responded within the expected execution window
 - **Scope:** runtime level
 - **Handler:** retry execution, optionally with a new worker
+- **Event sequence:** `execution.started` → `watchdog.started` (`WatchOrphanedWork` Policy) → `watchdog.fired` → `EscalateOnOrphanTimeout` Policy → `NotifyTaskOwner` Command
 
 ### Workflow Timeout (SLA Timeout)
 - **Definition:** expected process progress has not occurred within a business window
 - **Scope:** task / flow level
 - **Handler:** notify owner, prompt, escalate if needed
+- **Event sequence:** `task.accepted` → `watchdog.started` (`WatchOrphanedWork` Policy) → `watchdog.fired` → `EscalateOnOrphanTimeout` Policy → `NotifyTaskOwner` → if unresolved → `EscalateToJames` Command
 
 ### Publication Timeout / Ambiguity Timeout
 - **Definition:** a user-visible publish intent has no confirmed terminal outcome within policy window
 - **Scope:** request/publication level
 - **Handler:** bounded retry, reconciliation, fallback decision, or escalation
+- **Event sequence:** `reply.publication_attempted` → `watchdog.started` (`WatchPublicationTimeout` Policy) → `watchdog.fired` → `InvokeFallbackOnPublicationTimeout` Policy → `InvokeReplyFallback` Command
 
 ## Timeout Decision Table
 
@@ -115,6 +122,8 @@ Using one generic dedup story across all three domains creates bugs.
 ## Recovery Paths
 
 ### Retry
+Implemented automatically by `RetryPublicationOnFailure` and `RetryNormalizationOnAdapterFailure` Policies. Manual retry applies when no named Policy covers the failure mode.
+
 Used when:
 - failure is transient
 - idempotency is guaranteed
@@ -123,6 +132,8 @@ Used when:
 For publication, mechanical retry must reuse the same `publish_dedup_key`.
 
 ### Reassign
+No named Policy — requires an explicit owner or operator decision after the current assignment is closed.
+
 Used when:
 - original owner/executor is unresponsive or unavailable
 - execution runtime failed and cannot be resumed
@@ -131,6 +142,8 @@ Used when:
 Reassignment requires a new acceptance handoff. Prior ownership must be explicitly closed.
 
 ### Reconcile
+No named Policy — requires explicit investigation and a decision. Triggered when late-arriving signals conflict with believed state.
+
 Used when:
 - late-arriving signals conflict with the currently believed state
 - publication outcome is ambiguous
@@ -139,6 +152,8 @@ Used when:
 Reconciliation must preserve the audit trail and must not silently duplicate human-visible output.
 
 ### Escalate
+Implemented automatically by `EscalateOnHandoffTimeout`, `EscalateOnReviewLimitReached`, `EscalateOnVerifyLimitReached`, and `EscalateOnOrphanTimeout` Policies. Manual escalation applies when convergence fails despite automatic Policies firing.
+
 Used when:
 - retry/reassign/reconcile do not converge
 - a quality/scope deadlock exists
