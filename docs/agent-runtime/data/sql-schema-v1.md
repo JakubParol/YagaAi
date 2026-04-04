@@ -6,6 +6,8 @@
 - `id TEXT PK`
 - `correlation_id TEXT NOT NULL`
 - `origin TEXT NOT NULL`
+- `idempotency_key TEXT NOT NULL` (maps to `Idempotency-Key` header)
+- `payload_fingerprint TEXT NOT NULL` (deterministic hash of canonical request payload)
 - `status TEXT NOT NULL DEFAULT 'received'`
 - `reply_target_channel TEXT NOT NULL`
 - `reply_target_session_key TEXT NOT NULL`
@@ -14,7 +16,9 @@
 
 Indexes:
 - `UNIQUE(correlation_id)`
+- `UNIQUE(idempotency_key)`
 - `INDEX(status, created_at)`
+- `INDEX(idempotency_key, payload_fingerprint)`
 
 ### `tasks`
 - `id TEXT PK`
