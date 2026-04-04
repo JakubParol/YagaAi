@@ -2,6 +2,11 @@
 
 ## Design Principle
 
+The event log is the system's backbone. Watchdogs arm from it. Policies react to it.
+Retries are scheduled from it. Read Models are derived from it. State reconstruction for
+replay and recovery flows from it. It is not an audit trail appended after the fact; it is
+the primary record from which all other views are derived.
+
 The system must be inspectable end to end.
 
 An operator must be able to answer without digging through transcript chaos:
@@ -55,6 +60,7 @@ For every relevant run (request, task, flow, or session), the system must be abl
 | **Prompt / context snapshot** | What the agent was given at each significant decision point |
 | **Artifact lineage** | Which artifacts were produced, from which tasks, and where they were used |
 | **Policy / version lineage** | Which prompt / skill / routing version was active |
+| **Policy activation ledger** | Which Policies fired, on which Domain Events, with what Commands issued and outcomes |
 
 ---
 
@@ -181,6 +187,10 @@ Important categories include:
 - execution events
 - memory events
 - flow events
+- watchdog / timer events
+- retry events
+- adapter notification events
+- command rejection events
 
 See [reference/canonical-events.md](reference/canonical-events.md).
 
