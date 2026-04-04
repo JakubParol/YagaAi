@@ -43,6 +43,12 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 
 ## Validation
 - `handoff_id`, `from_agent`, `to_agent`, `goal`, `definition_of_done`, `callback_target`, `dedup_key` required.
+- `correlation_id` always required (audit/replay linkage per `11-observability-and-audit.md`).
+- `request_id` required when the handoff originates from user-originated durable work (per `03-runtime-and-a2a.md`); nullable for agent-internal tasks with no user request.
 - `from_agent != to_agent`.
 - `status` enum: `received|accepted|rejected|completed|failed|blocked`.
+- `outcome` enum (set on completion): `done|failed|blocked`. `partial` and `escalated` are reserved for future slices and are not valid in v1 completion messages.
 - `dedup_key` MUST be stable across safe retries of the same handoff/callback intent.
+
+## Field Naming Note
+This contract uses `from_agent`/`to_agent` (dispatch-centric naming for v1). The full handoff field set — including `priority`, `execution_mode`, `input_artifacts`, `reply_target_ref`, and reply routing fields — is defined in `reference/handoff-contract.md`. The v1 thin-slice omits those fields; implementers adding richer handoff payloads should treat `handoff-contract.md` as the authoritative schema extension point.

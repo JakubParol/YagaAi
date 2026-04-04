@@ -13,6 +13,7 @@
 - `reply_publish_status TEXT NOT NULL DEFAULT 'pending'` (vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned` per `13-implementation-decisions.md`)
 - `reply_target_channel TEXT NOT NULL`
 - `reply_target_session_key TEXT NOT NULL`
+- `strategic_owner_agent_id TEXT` (nullable; set by strategic owner at normalization; authoritative per `13-implementation-decisions.md` Decision 7)
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
@@ -51,11 +52,29 @@ Indexes:
 - `artifacts_json TEXT` (nullable; JSON array of artifact references, e.g. `["artifact://research/v1.md"]`)
 - `dedup_key TEXT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
 
 Indexes:
 - `UNIQUE(dedup_key)`
 - `INDEX(to_agent, status)`
 - `INDEX(correlation_id)`
+- `INDEX(status, updated_at)`
+
+### `publications`
+- `id TEXT PK`
+- `request_id TEXT NOT NULL FK -> requests(id)`
+- `channel TEXT NOT NULL`
+- `session_key TEXT NOT NULL`
+- `status TEXT NOT NULL DEFAULT 'pending'` (vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned` per `13-implementation-decisions.md` Decision 4)
+- `attempt_count INTEGER NOT NULL DEFAULT 0`
+- `last_attempt_at TIMESTAMP`
+- `published_at TIMESTAMP`
+- `last_stream_sequence BIGINT NOT NULL DEFAULT 0`
+- `updated_at TIMESTAMP NOT NULL`
+
+Indexes:
+- `UNIQUE(request_id, channel, session_key)`
+- `INDEX(status, updated_at)`
 
 ### `event_log`
 - `event_id TEXT PK`
@@ -83,3 +102,6 @@ Indexes:
 - Baseline: `alembic revision --autogenerate -m "schema v1 baseline"`.
 - Forward-only migrations, no destructive rollback in prod.
 - Data migrations separated from schema migrations.
+
+## Type Notes
+- `BIGINT` columns (`stream_sequence`, `last_stream_sequence`) map to SQLite's `INTEGER` affinity (64-bit signed). SQLite ignores the type name; Alembic handles dialect-specific mapping. No data loss risk on SQLite — this notation documents the intended numeric range.

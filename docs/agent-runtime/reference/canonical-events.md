@@ -5,14 +5,19 @@ If it happened, there is an event for it. This applies to fire-and-forget messag
 adapter notifications, watchdog activations, retry schedules, memory writes, and
 publication attempts — without exception.
 
-All events carry:
+All events carry the following envelope fields (see `contracts/event-bus-v1.md` for the authoritative envelope schema):
+- `event_id` (unique per emission; may change across transport retries — use `dedup_key` for idempotency)
+- `dedup_key` (stable across retries of the same intent; idempotency fence)
+- `event_type`
+- `aggregate_type`
+- `aggregate_id`
+- `occurred_at`
+- `actor`
 - `correlation_id`
 - `causation_id`
-- `dedup_key`
-- `event_type`
-- `timestamp`
-- `actor`
-- `version`
+- `schema_version`
+- `stream_sequence`
+- `payload`
 
 For user-originated durable work, events should also retain the link to `request_id`
 even when the request record remains the primary routing/publication store.

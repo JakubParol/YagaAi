@@ -79,4 +79,5 @@ Error body:
 - `POST /requests` requires `Idempotency-Key` header.
 - Same key + same payload => return original `202` response.
 - Same key + different payload => `409 CONFLICT`.
+- `Idempotency-Key` uniqueness is scoped to the authenticated caller identity (`idempotency_scope` in the `requests` table). Two different callers using the same `Idempotency-Key` value are treated as independent requests and do not conflict.
 - Callback endpoints dedupe by stable `event_id`; signature timestamp is used only for freshness/replay-window validation.

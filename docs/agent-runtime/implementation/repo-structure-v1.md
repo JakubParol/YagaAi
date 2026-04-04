@@ -1,5 +1,7 @@
 # Repo Structure v1
 
+> **Status:** This is the **target v1 layout** to be created during implementation. The repository currently contains only `docs/` and `README.md`. No application directories exist yet.
+
 ## Proposed Layout
 ```
 /apps/api        ← FastAPI HTTP server (ingress, webhooks, read models)

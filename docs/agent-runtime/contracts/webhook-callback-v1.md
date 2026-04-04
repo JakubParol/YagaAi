@@ -31,3 +31,5 @@ Verification:
 - Producer retries on non-2xx with exponential backoff (1s, 5s, 30s, 2m, 10m).
 - Max 5 attempts then dead-letter.
 - Consumer must be idempotent by `event_id`.
+
+> **Why `event_id` here, not `dedup_key`?** For external inbound webhooks, `event_id` is bound to the HMAC signature (it appears in the signed string and in `X-Yaga-Event-Id`). The producer guarantees `event_id` stability across retries of the same publication event. This makes `event_id` serve the idempotency-fence role that `dedup_key` serves internally. The webhook payload has no `dedup_key` field; do not add one — callers should use `event_id` exclusively.

@@ -31,6 +31,7 @@ Fields:
 - `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires at >= 2)
 - `callback_target TEXT NOT NULL`
 - `last_stream_sequence BIGINT NOT NULL`
+- `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
 ### `publication_projection`
@@ -41,7 +42,7 @@ Fields:
 - `request_id TEXT NOT NULL`
 - `channel TEXT NOT NULL`
 - `session_key TEXT NOT NULL`
-- `status TEXT NOT NULL` (`pending|attempted|published|failed|fallback_required|abandoned`)
+- `status TEXT NOT NULL` (`pending|attempted|published|failed|unknown|fallback_required|abandoned`)
 - `attempt_count INTEGER NOT NULL DEFAULT 0`
 - `last_attempt_at TIMESTAMP`
 - `published_at TIMESTAMP`
