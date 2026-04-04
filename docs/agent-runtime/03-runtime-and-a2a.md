@@ -6,13 +6,17 @@ The runtime uses four primitive message types:
 
 | Type | Meaning | Initiator | Example |
 |------|---------|-----------|---------|
-| **command** | Intent to perform an action | agent / adapter | `assign-task`, `request-review`, `publish-reply` |
-| **event** | Fact that something happened | agent / runtime / adapter | `handoff.accepted`, `reply.published` |
+| **command** | Intent to perform an action, addressed to an Aggregate. May be rejected — rejection always produces a `command.rejected` Domain Event | agent / adapter | `assign-task`, `request-review`, `publish-reply` |
+| **event** | Immutable Domain Event fact that something happened; cannot be undone | agent / runtime / adapter | `handoff.accepted`, `reply.published` |
 | **status** | Canonical snapshot of task or work-item state | task store / MC | `task:in-progress`, `us:code-review` |
 | **artifact** | Result or reference to a result | producing agent | report, PR reference, test result |
 
 Commands express intent. Events express facts. Status is derived state. Artifacts are outputs.
 These must not be conflated.
+
+The Command → Aggregate → Domain Event chain is the fundamental unit of state change. No
+state change occurs without a Domain Event. A rejected Command produces a `command.rejected`
+Domain Event. There are no silent operations.
 
 The runtime must expose these semantics consistently across:
 - built-in Web UI host
@@ -106,10 +110,10 @@ For user-originated durable work:
 
 ### Acceptance semantics
 
-A handoff is not complete at dispatch. It transitions through:
+A handoff is not complete at dispatch. It transitions through Domain Events:
 
 ```text
-dispatched → pending → accepted | rejected → in-progress → done | failed | escalated
+handoff.dispatched → pending → handoff.accepted | handoff.rejected → in-progress → done | failed | escalated
 ```
 
 - **pending**: delivered, waiting for acknowledgment
