@@ -3,7 +3,8 @@
 ## Base
 - Base path: `/api/v1`
 - Content-Type: `application/json`
-- Auth: `Authorization: Bearer <token>`
+- Auth (default): `Authorization: Bearer <token>`
+- Auth exception: `POST /webhooks/publication-status` does **not** use bearer auth; it must be authenticated via `X-Yaga-Signature`, `X-Yaga-Timestamp`, and `X-Yaga-Event-Id` HMAC callback headers (see `webhook-callback-v1.md`).
 
 ## Endpoints
 
@@ -36,6 +37,7 @@ Returns request read model.
 
 ### `POST /webhooks/publication-status`
 Adapter callback for publication outcome (canonical path; full route: `/api/v1/webhooks/publication-status`).
+This endpoint is a signed inbound webhook and must accept valid `X-Yaga-*` signature headers without requiring `Authorization: Bearer <token>`.
 
 ## Error Taxonomy
 | Code | HTTP | Meaning |
