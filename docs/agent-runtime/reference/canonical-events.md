@@ -1,5 +1,10 @@
 # Canonical Events
 
+Every operation in the system emits a Domain Event. There are no silent operations.
+If it happened, there is an event for it. This applies to fire-and-forget messages,
+adapter notifications, watchdog activations, retry schedules, memory writes, and
+publication attempts — without exception.
+
 All events carry:
 - `correlation_id`
 - `causation_id`
@@ -137,10 +142,37 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 | `callback.received` | callback_target | `task_ref`, `outcome` | Requester acknowledged result |
 | `callback.failed` | system | `task_ref`, `callback_target`, `error` | Callback delivery failed |
 
-## Scope Note
+## Watchdog / Timer Events
 
-Keep the canonical request/publication event set tight.
-Additional events such as publish acknowledgement, retry scheduled, or retry exhausted
-should only be introduced if the implementation needs them beyond the minimum v1 model.
+Watchdogs are armed by Policies and disarmed when the condition resolves.
+See [reference/policies.md](policies.md) for which Policy arms each watchdog.
 
-The same principle applies to indexing/retrieval events: keep the core set focused on freshness, failures, repairs, and query observability rather than turning the event catalog into a low-level parser trace.
+| Event Type | Emitted by | Key fields | Meaning |
+|------------|-----------|------------|---------|
+| `watchdog.started` | runtime | `watchdog_ref`, `trigger_event_id`, `policy`, `timeout_at` | Watchdog armed by a Policy |
+| `watchdog.fired` | runtime | `watchdog_ref`, `policy`, `elapsed` | Watchdog timeout elapsed; Policy reaction triggered |
+| `watchdog.cancelled` | runtime | `watchdog_ref`, `reason`, `cancelled_by_event_id` | Watchdog disarmed before firing (condition resolved) |
+
+## Retry Events
+
+| Event Type | Emitted by | Key fields | Meaning |
+|------------|-----------|------------|---------|
+| `retry.scheduled` | runtime | `subject_ref`, `attempt`, `retry_at`, `policy` | Retry scheduled by a Policy |
+| `retry.attempted` | runtime | `subject_ref`, `attempt`, `dedup_key` | Retry attempt made |
+| `retry.exhausted` | runtime | `subject_ref`, `attempts`, `policy` | All retry attempts consumed; escalation path triggered |
+
+## Adapter Notification Events
+
+| Event Type | Emitted by | Key fields | Meaning |
+|------------|-----------|------------|---------|
+| `adapter.notification_sent` | surface adapter | `adapter_id`, `target`, `notification_type`, `dedup_key` | Fire-and-forget adapter push sent |
+| `adapter.notification_failed` | surface adapter | `adapter_id`, `target`, `notification_type`, `error` | Adapter push failed |
+
+## Command Rejection Events
+
+A Command that is rejected by an Aggregate invariant check always produces this event.
+No Command is silent.
+
+| Event Type | Emitted by | Key fields | Meaning |
+|------------|-----------|------------|---------|
+| `command.rejected` | Aggregate (via runtime) | `command_type`, `aggregate_id`, `aggregate_type`, `reason`, `actor` | Command received but rejected by Aggregate invariant check |
