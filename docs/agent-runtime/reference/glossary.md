@@ -40,7 +40,10 @@ they do not create separate coordination contexts. Adding a new channel adds a n
 adapter, not a new agent session.
 
 **Command**  
-A message expressing intent to perform an action. One of the A2A primitive types.
+A message expressing intent to change state, addressed to an Aggregate. Commands may be
+rejected — rejection always produces a `command.rejected` Domain Event. A Command that is
+accepted always produces one or more Domain Events. No Command is silent.
+One of the A2A primitive types.
 See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md).
 
 **Correlation ID**  
@@ -86,6 +89,8 @@ ownership conflicts, or quality deadlocks. See [05-ownership-lifecycle-and-state
 
 **Event**  
 An immutable fact that something happened. The authoritative execution trace.
+Also referred to as **Domain Event** — the preferred term when distinguishing from
+Commands. An Event is an immutable fact; a Command is an intent that may be refused.
 See [canonical-events.md](canonical-events.md).
 
 **Event History**  
