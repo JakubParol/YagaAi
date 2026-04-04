@@ -48,6 +48,7 @@ Indexes:
 
 ### `event_log`
 - `event_id TEXT PK`
+- `dedup_key TEXT NOT NULL`
 - `event_type TEXT NOT NULL`
 - `aggregate_type TEXT NOT NULL`
 - `aggregate_id TEXT NOT NULL`
@@ -59,10 +60,12 @@ Indexes:
 - `occurred_at TIMESTAMP NOT NULL`
 
 Indexes:
+- `UNIQUE(dedup_key)`
 - `UNIQUE(aggregate_type, aggregate_id, stream_sequence)`
 - `INDEX(aggregate_type, aggregate_id, stream_sequence)`
 - `INDEX(aggregate_type, aggregate_id, occurred_at)`
 - `INDEX(correlation_id, occurred_at)`
+- `INDEX(dedup_key, occurred_at)`
 
 ## Migration Strategy
 - Baseline: `alembic revision --autogenerate -m "schema v1 baseline"`.
