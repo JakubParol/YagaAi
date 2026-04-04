@@ -36,7 +36,7 @@ The glossary is alphabetically ordered. Insert each new entry in its correct alp
 
 - [ ] **Step 1: Add `Aggregate` entry after the `Agent` entry**
 
-Insert after the `Agent` block (after the line `See [02-core-model.md](../02-core-model.md).` that closes the Agent entry), leaving a blank line before the new entry:
+Insert after the `Agent` block (after the line `See \[02-core-model.md\](../02-core-model.md).` that closes the Agent entry), leaving a blank line before the new entry:
 
 ```markdown
 **Aggregate**  
@@ -48,7 +48,7 @@ exactly one authoritative store.
 
 - [ ] **Step 2: Add `Bounded Context` entry after the `Artifact` entry**
 
-Insert after the `Artifact` block (after the line `See [artifact-model.md](artifact-model.md).`):
+Insert after the `Artifact` block (after the line `See \[artifact-model.md\](artifact-model.md).`):
 
 ```markdown
 **Bounded Context**  
@@ -72,7 +72,7 @@ See [canonical-events.md](canonical-events.md).
 
 - [ ] **Step 4: Add `External System` entry after the `Execution Timeout` entry**
 
-Insert after the `Execution Timeout` block (after "See [10-failure-recovery-and-timeouts.md](../10-failure-recovery-and-timeouts.md)."):
+Insert after the `Execution Timeout` block (after "See \[10-failure-recovery-and-timeouts.md\](../10-failure-recovery-and-timeouts.md)."):
 
 ```markdown
 **External System**  
@@ -83,7 +83,7 @@ Bounded Context.
 
 - [ ] **Step 5: Add `Policy` entry after the `Owner Session` entry and before `Procedural Memory / Skills`**
 
-Insert after the `Owner Session` block (after the line ending "See [02-core-model.md](../02-core-model.md) and [04-channel-sessions-and-main-owner-routing.md](../04-channel-sessions-and-main-owner-routing.md)."):
+Insert after the `Owner Session` block (after the line ending "See \[02-core-model.md\](../02-core-model.md) and \[04-channel-sessions-and-main-owner-routing.md\](../04-channel-sessions-and-main-owner-routing.md)."):
 
 ```markdown
 **Policy**  
@@ -95,7 +95,7 @@ escalation, and fallback invocation is a Policy.
 
 - [ ] **Step 6: Add `Read Model` entry after the `Publish Intent` entry and before `Reply Intent`**
 
-Insert after the `Publish Intent` block (after the line ending "See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md)."):
+Insert after the `Publish Intent` block (after the line ending "See \[03-runtime-and-a2a.md\](../03-runtime-and-a2a.md)."):
 
 ```markdown
 **Read Model**  

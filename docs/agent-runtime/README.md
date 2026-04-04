@@ -83,6 +83,7 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [reference/glossary.md](reference/glossary.md) | Definitions of all terms used across docs |
 | [reference/canonical-statuses.md](reference/canonical-statuses.md) | Canonical task/US statuses and transition notes |
 | [reference/canonical-events.md](reference/canonical-events.md) | Canonical event types and semantics |
+| [reference/policies.md](reference/policies.md) | Named runtime and Mission Control policy catalog |
 | [reference/handoff-contract.md](reference/handoff-contract.md) | Required fields and semantics of a handoff |
 | [reference/artifact-model.md](reference/artifact-model.md) | Artifact types, lifecycle, and usage |
 | [reference/agent-roles.md](reference/agent-roles.md) | Agent definitions, ownership, and scope |
