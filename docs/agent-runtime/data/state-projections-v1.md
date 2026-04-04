@@ -16,6 +16,7 @@
 - No direct writes from agent executors.
 
 ## Conflict Resolution
-- Last-write-wins by `(occurred_at, event_id)`.
-- Reject stale event if projection version > incoming stream version.
+- Last-write-wins by `(occurred_at, event_id)` for tie-break safety only.
+- Track and persist `last_stream_sequence` per projection row.
+- Reject stale event if incoming `stream_sequence <= last_stream_sequence` for the same aggregate stream.
 - Emit `transition.rejected` for invalid transitions.

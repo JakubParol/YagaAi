@@ -49,9 +49,13 @@ Indexes:
 - `correlation_id TEXT NOT NULL`
 - `causation_id TEXT`
 - `payload_json TEXT NOT NULL`
+- `schema_version TEXT NOT NULL`
+- `stream_sequence BIGINT NOT NULL`
 - `occurred_at TIMESTAMP NOT NULL`
 
 Indexes:
+- `UNIQUE(aggregate_type, aggregate_id, stream_sequence)`
+- `INDEX(aggregate_type, aggregate_id, stream_sequence)`
 - `INDEX(aggregate_type, aggregate_id, occurred_at)`
 - `INDEX(correlation_id, occurred_at)`
 

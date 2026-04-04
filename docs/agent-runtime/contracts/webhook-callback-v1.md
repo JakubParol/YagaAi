@@ -11,7 +11,8 @@ Headers:
 
 Verification:
 - Reject if timestamp drift > 300s.
-- Compute HMAC SHA-256 over `timestamp + "." + raw_body`.
+- Compute HMAC SHA-256 over `timestamp + "." + event_id + "." + raw_body`, where `event_id` is the exact value from `X-Yaga-Event-Id`.
+- Reject if `X-Yaga-Event-Id` and payload `event_id` do not match exactly.
 
 ## Payload
 ```json

@@ -19,14 +19,17 @@ Examples:
   "actor":{"type":"agent","id":"james"},
   "correlation_id":"corr_01",
   "causation_id":"evt_00",
-  "version":"v1",
+  "schema_version":"v1",
+  "stream_sequence":42,
   "payload":{}
 }
 ```
 
-Required fields: `event_id,event_type,aggregate_type,aggregate_id,occurred_at,correlation_id,version,payload`.
+Required fields: `event_id,event_type,aggregate_type,aggregate_id,occurred_at,correlation_id,schema_version,stream_sequence,payload`.
 
 Aggregate stream key is defined as `aggregate_type + ":" + aggregate_id` and is the key used for partitioning and ordering.
+
+`stream_sequence` MUST be a monotonically increasing integer scoped to the aggregate stream key and MUST advance by exactly 1 for each new persisted event in that stream.
 
 ## Delivery Guarantees
 - At-least-once delivery.
