@@ -1,7 +1,7 @@
 # Webhook Callback Contract v1
 
 ## Endpoint
-`POST /api/v1/webhooks/publication-status`
+`POST /api/v1/webhooks/publication-status` (canonical publication callback endpoint used across runtime contracts)
 
 ## Signature
 Headers:

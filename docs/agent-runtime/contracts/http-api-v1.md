@@ -34,8 +34,8 @@ Validation:
 ### `GET /requests/{request_id}`
 Returns request read model.
 
-### `POST /callbacks/publication`
-Adapter callback for publication outcome.
+### `POST /webhooks/publication-status`
+Adapter callback for publication outcome (canonical path; full route: `/api/v1/webhooks/publication-status`).
 
 ## Error Taxonomy
 | Code | HTTP | Meaning |
@@ -58,4 +58,4 @@ Error body:
 - `POST /requests` requires `Idempotency-Key` header.
 - Same key + same payload => return original `202` response.
 - Same key + different payload => `409 CONFLICT`.
-- Callback endpoints use `event_id` + signature timestamp as dedupe key.
+- Callback endpoints dedupe by stable `event_id`; signature timestamp is used only for freshness/replay-window validation.
