@@ -115,6 +115,14 @@ These two axes together define the Yaga prompt stack.
 
 Yaga should have at least three prompt modes.
 
+These modes map directly onto the session model: the **full prompt** is for an agent's `main`
+coordination session — the single durable owner endpoint. **Minimal/subagent prompts** are for
+workers and sub-sessions that execute bounded tasks on behalf of the owner. Workers are not durable
+owners and must not receive the full owner identity context; their results always return to the
+spawning agent's `main`. See [02-core-model.md](02-core-model.md) for the one-main-per-agent
+invariant and [04-channel-sessions-and-main-owner-routing.md](04-channel-sessions-and-main-owner-routing.md)
+for the routing topology.
+
 ## 4.1 Full prompt
 Used for:
 - main owner sessions
@@ -144,7 +152,9 @@ Includes only:
 - narrow relevant project context
 - no unnecessary long-lived identity baggage
 
-This prevents prompt bloat and accidental inheritance of irrelevant instructions.
+This prevents prompt bloat and accidental inheritance of irrelevant instructions. It also enforces
+the architectural boundary: a worker receiving only a task contract cannot silently assume the
+durable owner role. The worker completes its task and returns results to the spawning `main`.
 
 ## 4.3 Execution-only prompt
 Optional but likely useful.

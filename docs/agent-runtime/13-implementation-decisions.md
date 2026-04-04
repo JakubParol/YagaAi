@@ -169,6 +169,12 @@ The authoritative split is:
 **Why:**
 - This avoids a second ownership authority competing with task/flow systems.
 
+**Important:** This decision is about observability only. It has no bearing on the one-main-per-agent
+session invariant. Each agent has exactly one `main` coordination endpoint regardless of how ownership
+fields are mirrored in the request record. `current_owner_agent_id` changing during delegation does
+not mean ownership moves to a new session — it means a different agent's `main` is currently the
+active execution owner, and the request record tracks that for operators.
+
 ---
 
 ### Decision 8 — `reply_target` vs `reply_session_key`

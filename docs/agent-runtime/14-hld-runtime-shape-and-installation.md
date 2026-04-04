@@ -175,6 +175,12 @@ Responsibilities:
 - host or expose Mission Control read models,
 - own the prompt assembly path for all agent sessions.
 
+**Session model:** Each named agent has exactly one `main` coordination session — the durable owner
+endpoint — regardless of how many channel adapters (WhatsApp, Discord, web, etc.) are active.
+Channel adapters are ingress/egress surfaces; they do not create additional agent sessions. The
+runtime also manages bounded worker sessions spawned by agents for specific tasks; these are not
+durable owners and always return results to the spawning agent's `main`.
+
 **Agent supervision model:**
 Each named agent (James, Naomi, Amos, Alex) has a stable durable identity registered in the runtime.
 The daemon supervises agent processes/workers and is responsible for:
