@@ -43,6 +43,12 @@ For user-facing work, sessions come in two important shapes:
 
 The durable owner remains the agent, not the session object.
 
+**One-main invariant:** At any given time, an agent has exactly one `main` coordination
+context regardless of how many channel or surface adapters are active. Channel sessions
+(WhatsApp, Discord, web, etc.) are transport adapters that feed into this single `main`
+coordination context. They are not separate agent sessions. Adding a new channel adds
+a new adapter — it does not create a new agent session or a new coordination context.
+
 ### Request
 
 A request is the durable record for a **user-originated** unit of work.
@@ -233,7 +239,7 @@ These four layers must not be collapsed into each other.
 |-------|-----------|---------|
 | **Agent** | Durable operational owner with identity, memory, responsibility, and accountability | James, Naomi, Amos, Alex |
 | **Owner session (`main`)** | The agent's canonical coordination endpoint for durable routing, acceptance, delegation, and callback handling | `agent:main:main`, `agent:naomi:main`, `agent:amos:main` |
-| **Worker / sub session** | A temporary execution context created by an owning agent to perform bounded work on its behalf; not a durable owner | an implementation worker spawned by Naomi; a review-analysis worker spawned by Amos |
+| **Worker / sub session** | A temporary execution context created by an owning agent to perform bounded work on its behalf; not a durable owner | an implementation worker spawned by any owning agent (e.g. a dev worker spawned by the implementation agent; a review-analysis worker spawned by the QA agent) |
 | **Harness / execution backend** | A tool or backend used by an owner session or worker session to perform execution; not an agent, task owner, or workflow owner | ACP, Claude Code, Codex, acpx |
 
 ### Invariant
@@ -242,6 +248,13 @@ These four layers must not be collapsed into each other.
 
 A2A contracts operate between owning agents. Worker spawning and harness choice are
 internal execution decisions of the receiving owner and sit below the A2A contract layer.
+
+**Sub-session return invariant:** Results from any worker or sub-session always return
+to the spawning agent's `main`. A worker does not report directly to other agents,
+Mission Control, or channel adapters. The return path is strictly: worker →
+spawning agent's `main`. There are no shortcuts to other agents or to the top of the
+delegation chain. If agent A delegated to agent B, and B spawned a worker, the worker
+reports to B's `main` — not to A.
 
 All named agents in v1 (James, Naomi, Amos, Alex) have the same architectural standing.
 Their differences are responsibility-domain differences, not architectural-species differences.

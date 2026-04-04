@@ -22,7 +22,10 @@ causal chains. See [11-observability-and-audit.md](../11-observability-and-audit
 **Channel Session**  
 A session bound to a transport surface or surface context (for example WhatsApp,
 Discord, or web chat). It is an ingress/egress adapter, not the durable owner of
-important work.
+important work. An agent maintains exactly one `main` coordination context regardless
+of how many channel sessions are active. Channel sessions feed into that single `main`;
+they do not create separate coordination contexts. Adding a new channel adds a new
+adapter, not a new agent session.
 
 **Command**  
 A message expressing intent to perform an action. One of the A2A primitive types.
@@ -229,8 +232,11 @@ May be promoted to episodic or semantic memory. See [07-memory-model-and-vectori
 **Worker / Sub Session**  
 A temporary execution context created by an owning agent to perform bounded work on
 its behalf. A worker is not a durable owner, strategic owner, or workflow owner. It
-acts under the owning agent and returns results to the owning agent's `main`. Worker
-session IDs are execution metadata; they do not replace agent ownership fields.
+acts under the owning agent and returns results to the spawning agent's `main` — never
+directly to other agents, Mission Control, or channel adapters. If agent A delegated
+to agent B, and B spawned workers, those workers return results to B's `main`; B then
+reports to A through the normal A2A callback path. Worker session IDs are execution
+metadata; they do not replace agent ownership fields.
 See [02-core-model.md](../02-core-model.md).
 
 **Workflow Timeout (SLA Timeout)**  

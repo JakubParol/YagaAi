@@ -265,9 +265,15 @@ are architecturally distinct:
 - Naomi main → Amos main (handoff for code review / verify)
 
 **Owner-to-worker execution** — an internal decision of the receiving owner, invisible to A2A:
-- Naomi main may spawn one or more worker/sub sessions
+- any owning agent may spawn one or more worker/sub sessions (for example: an
+  implementation agent may spawn coding workers; a QA agent may spawn analysis workers)
 - those workers may use any harness or backend (ACP, Claude Code, Codex, acpx)
-- results return to Naomi's `main`, not directly to James or Mission Control
+- results always return to the spawning agent's `main`, never directly to the delegating
+  agent above, Mission Control, or a channel adapter
+
+This applies universally: the return path is always worker → spawning agent's `main`.
+If agent A delegated to agent B, and B spawned workers, those workers report to B's `main`
+— not to A. Agent B then reports back to A through the normal A2A callback path.
 
 Worker spawning and harness choice do not produce A2A handoffs and do not transfer
 ownership. Changing execution backend does not alter the ownership graph. The owner

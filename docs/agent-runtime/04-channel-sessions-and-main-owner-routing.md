@@ -28,6 +28,14 @@ Short version:
 
 > **Inbound through channel. Durable coordination through main. Specialist delegation main-to-main. Final reply through stored reply-target metadata.**
 
+**One-main-per-agent invariant:**
+
+> An agent has exactly one `main` coordination context regardless of how many channel or
+> surface adapters are active. WhatsApp, Discord, web, Teams — each is an adapter, not
+> a separate agent session. A message arriving via WhatsApp and a message arriving via
+> Discord both normalize into the same owner `main`. The channel that carries the inbound
+> message does not determine which coordination context handles the work.
+
 ---
 
 ## Key Clarification: Agent Owner vs Main Session
@@ -194,15 +202,21 @@ For durable, delegated, or non-trivial user-originated work:
 - the agent’s `main` session key is the canonical coordination endpoint,
 - the ingress channel session is not the durable owner.
 
-For James, this normally means:
-- user request enters through a James channel session,
-- durable coordination normalizes into `agent:main:main`.
+For any owning agent, this means:
+- user request enters through a channel/surface session for that agent,
+- durable coordination normalizes into that agent’s `main` session key.
+
+For example, the primary user-facing agent (`agent:main:main`) receives requests from
+its WhatsApp, Discord, web, and other channel adapters — all into the same `main`.
 
 ### Rule 3 — Specialist delegation is owner-to-owner
-If James delegates implementation, QA, or research:
-- James delegates from `agent:main:main`,
-- to `agent:naomi:main`, `agent:amos:main`, or `agent:alex:main`,
-- not to Discord/WhatsApp/web variants of those agents.
+When an owning agent delegates work to a specialist:
+- delegation is from the strategic owner’s `main`,
+- to the specialist agent’s `main`,
+- not to channel/surface variants of those agents.
+
+For example: strategic owner `main` → specialist `main` (implementation, QA, research, etc.)
+Not: strategic owner Discord session → specialist Discord session.
 
 ### Rule 4 — Callback routing and human reply routing are separate
 When specialist work completes:
@@ -231,7 +245,7 @@ There are four separate concerns:
 The agent accountable for the request as a whole.
 
 Example:
-- James
+- any owning agent; in the primary user-facing flow this is the main user-facing agent (e.g., James)
 
 ### 2. Owner-facing coordination endpoint
 The strategic owner’s canonical `main` session key.
@@ -261,15 +275,18 @@ These must not be collapsed into one concept.
 
 ## Canonical Flow Example
 
-### Example: Discord user asks James for implementation help
+### Example: Discord user asks the strategic owner agent for implementation help
 
-#### Step 1 — Inbound via Discord James session
-`agent:main:discord:...`
+This example uses agent IDs from the v1 setup (James as strategic owner, Naomi as
+implementation specialist), but the topology applies to any owning agent pair.
+
+#### Step 1 — Inbound via Discord channel session
+`agent:<strategic-owner-id>:discord:...`
 - receives the user message,
 - captures transport metadata,
 - creates a normalized request envelope,
 - persists or emits enough routing metadata for recovery,
-- dispatches the request to `agent:main:main`.
+- dispatches the request to the strategic owner's `main`.
 
 Minimum metadata should include:
 - `request_id`
@@ -287,14 +304,15 @@ Minimum metadata should include:
 - initial payload / user intent
 - `contract_version`
 
-#### Step 2 — Main James becomes the coordination endpoint for the strategic owner
-`agent:main:main`
+#### Step 2 — Strategic owner `main` becomes the coordination endpoint
+`agent:<strategic-owner-id>:main`
 - accepts the normalized request,
-- becomes the canonical coordination endpoint for James as strategic owner,
+- becomes the canonical coordination endpoint for the strategic owner,
 - decides what to do,
 - may answer directly or delegate.
 
-If the task is implementation work, James sends a handoff to `agent:naomi:main`.
+If the task requires specialist work, the strategic owner sends a handoff to the
+relevant specialist's `main` (e.g., `agent:<specialist-id>:main`).
 
 The handoff should include:
 - `goal`
@@ -302,8 +320,8 @@ The handoff should include:
 - `request_id`
 - `correlation_id`
 - `causation_id`
-- `callback_target = agent:main:main`
-- reply metadata needed later by James, including:
+- `callback_target = agent:<strategic-owner-id>:main`
+- reply metadata needed for final routing, including:
   - `reply_target`
   - `reply_session_key`
   - `origin_surface`
@@ -311,28 +329,73 @@ The handoff should include:
   - `origin_message_id` where available
   - `reply_target_version`
 
-#### Step 3 — Main Naomi owns specialist execution
-`agent:naomi:main`
+#### Step 3 — Specialist `main` owns specialist execution
+`agent:<specialist-id>:main`
 - accepts specialist ownership,
-- performs work directly or spawns a worker/runtime,
-- returns the result to `agent:main:main`.
+- performs work directly or spawns workers/sub-sessions,
+- worker results return to this specialist's `main` (never directly to the strategic owner),
+- returns the final result to the strategic owner's `main`.
 
-Naomi does **not** send the default final user-facing reply directly to Discord.
-Naomi does **not** route completion to a Discord Naomi session as the primary pattern.
-Naomi answers the delegating owner.
+The specialist does **not** send the default final user-facing reply directly to Discord.
+The specialist does **not** route completion to a Discord channel session as the primary pattern.
+The specialist answers the delegating owner.
 
-#### Step 4 — Main James resolves final routing
-`agent:main:main`
-- receives the result from Naomi,
+#### Step 4 — Strategic owner `main` resolves final routing
+`agent:<strategic-owner-id>:main`
+- receives the result from the specialist,
 - checks the stored request and reply metadata,
 - determines where the user-visible reply must go,
 - may issue an intermediate status update if needed,
-- routes the publish instruction to the correct James surface session.
+- routes the publish instruction to the correct channel adapter.
 
-#### Step 5 — Discord James session publishes the reply
-`agent:main:discord:...`
+#### Step 5 — Discord channel adapter publishes the reply
+`agent:<strategic-owner-id>:discord:...`
 - publishes the user-visible reply to the human on Discord,
 - reports publish success or failure back to the owner-facing state path if required.
+
+---
+
+### Example: User sends via WhatsApp, expects reply via Discord
+
+This example demonstrates the one-main invariant in action: the channel of origin does
+not determine the coordination context, and the reply target is stored metadata — not
+inferred from the transport.
+
+#### Step 1 — WhatsApp channel adapter receives the message
+`agent:<id>:whatsapp:...`
+- receives the user message,
+- captures transport metadata,
+- creates a normalized request envelope,
+- the user has indicated (or a routing rule determines) that the reply should go to Discord,
+- persists reply metadata:
+  - `origin_surface = whatsapp`
+  - `reply_target = discord`
+  - `reply_session_key = agent:<id>:discord:<channel-context>`
+- dispatches the normalized request to `agent:<id>:main`.
+
+#### Step 2 — Main becomes the coordination endpoint
+`agent:<id>:main`
+- accepts the normalized request,
+- receives the stored reply metadata,
+- the reply target being Discord is stored routing metadata — not a special case,
+- decides what to do: answer directly or delegate.
+
+If work is delegated, the reply metadata travels with the handoff so it is available when the result comes back.
+
+#### Step 3 — Work is done, main decides the response
+`agent:<id>:main`
+- receives result (directly or via specialist callback),
+- checks stored reply metadata: reply target is the Discord channel,
+- routes the publish instruction to the Discord channel adapter.
+
+#### Step 4 — Discord channel adapter publishes
+`agent:<id>:discord:...`
+- publishes the reply to the user on Discord,
+- reports publish success or failure back.
+
+The WhatsApp adapter was never the coordination owner. The Discord adapter was never
+the execution owner. Both were transport adapters. The same `main` session handled
+both the inbound and outbound routing.
 
 ---
 
@@ -635,10 +698,10 @@ Ad hoc surface-to-surface specialist routing is not an acceptable substitute for
 
 > **Do not route specialist work channel-to-channel as the default ownership path.**
 
-Disallowed examples:
-- Discord James -> Discord Naomi
-- WhatsApp James -> WhatsApp Naomi
-- Discord Naomi -> Discord James as the primary specialist callback path
+Disallowed examples (surface-to-surface specialist routing):
+- `agent:A:discord` → `agent:B:discord` (channel-to-channel delegation)
+- `agent:A:whatsapp` → `agent:B:whatsapp` (same anti-pattern, different surface)
+- `agent:B:discord` → `agent:A:discord` as the primary specialist callback path
 - any surface-to-surface specialist routing used as the primary durable coordination pattern
 
 Required default pattern:
@@ -654,6 +717,22 @@ In short:
 ---
 
 ## Why This Rule Exists
+
+### The anti-pattern: per-surface session fragmentation
+
+The alternative to this topology — where each channel or surface maintains its own session
+with its own ownership, memory, and routing state — is called **per-surface session
+fragmentation**.
+
+In a fragmented model:
+- the WhatsApp session owns WhatsApp requests
+- the Discord session owns Discord requests
+- memory fragments across surfaces
+- callback routing fragments across surfaces
+- the "same agent" becomes multiple disconnected centers of truth
+- a user who switches surface mid-task loses context or gets inconsistent responses
+
+This is the pattern this rule explicitly prevents. One agent, one `main`, many adapters.
 
 ### 1. Prevent ownership fragmentation
 If channel sessions become owners, then the same agent starts having multiple accidental centers of truth.
@@ -776,6 +855,7 @@ The system should preserve these invariants:
 1. **Every durable or delegated request has one strategic owner agent.**
 2. **The owner agent’s `main` session key is the canonical coordination endpoint for that work.**
 3. **Channel sessions are adapters, not durable strategic owners.**
+3a. **An agent has exactly one `main` coordination context regardless of how many channel adapters are active. Adding a channel adds an adapter, not a new session.**
 4. **Specialist delegation is main-to-main by default.**
 5. **Specialist completion returns to the delegating owner by default.**
 6. **Operational ownership and human reply routing are tracked separately.**
