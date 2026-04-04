@@ -7,6 +7,7 @@
 - `correlation_id TEXT NOT NULL`
 - `origin TEXT NOT NULL`
 - `idempotency_key TEXT NOT NULL` (maps to `Idempotency-Key` header)
+- `idempotency_scope TEXT NOT NULL` (caller/auth scope used to isolate idempotency domains for `POST /requests`)
 - `payload_fingerprint TEXT NOT NULL` (deterministic hash of canonical request payload)
 - `status TEXT NOT NULL DEFAULT 'received'`
 - `reply_target_channel TEXT NOT NULL`
@@ -16,9 +17,9 @@
 
 Indexes:
 - `UNIQUE(correlation_id)`
-- `UNIQUE(idempotency_key)`
+- `UNIQUE(idempotency_scope, idempotency_key)`
 - `INDEX(status, created_at)`
-- `INDEX(idempotency_key, payload_fingerprint)`
+- `INDEX(idempotency_scope, idempotency_key, payload_fingerprint)`
 
 ### `tasks`
 - `id TEXT PK`

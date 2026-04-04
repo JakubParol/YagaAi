@@ -14,8 +14,6 @@ Create normalized request ingress.
 **Request**
 ```json
 {
-  "request_id": "req_01",
-  "correlation_id": "corr_01",
   "origin": "discord",
   "payload": {"text": "Implement feature X"},
   "reply_target": {"channel": "discord", "session_key": "disc:abc"}
@@ -23,9 +21,10 @@ Create normalized request ingress.
 ```
 
 Validation:
-- `request_id`, `correlation_id` required, max 128 chars.
 - `origin` enum: `whatsapp|discord|web|cli`.
 - `payload.text` required for text inputs.
+- `request_id` and `correlation_id` are runtime-owned identifiers and are **not accepted** from external callers in `POST /requests`.
+- Runtime assigns `request_id` at ingress normalization and `correlation_id` at strategic-owner normalization per `03-runtime-and-a2a.md` ID generation rules.
 
 **Response `202 Accepted`**
 ```json
