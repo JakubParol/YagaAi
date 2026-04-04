@@ -6,11 +6,12 @@
 /apps/worker     ← background event processor, watchdog loops, projection workers
 /apps/ui         ← Next.js Web UI (built-in surface per 14-hld-runtime-shape-and-installation.md)
 /apps/cli        ← Typer CLI (yaga command per 15-tech-stack.md)
-/packages/runtime-core
-/packages/mission-control
-/packages/adapters
-/packages/persistence
-/packages/contracts
+/packages/       ← Python packages (not npm workspaces; ui is the only TypeScript app)
+  runtime-core
+  mission-control
+  adapters
+  persistence
+  contracts
 /tests
 /docs
 ```

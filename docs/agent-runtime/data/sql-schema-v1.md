@@ -29,6 +29,7 @@ Indexes:
 - `owner_agent TEXT NOT NULL`
 - `state TEXT NOT NULL`
 - `priority TEXT NOT NULL DEFAULT 'normal'`
+- `callback_target TEXT NOT NULL` (where task completion result returns; routes to strategic owner main for user-originated work)
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
@@ -40,6 +41,8 @@ Indexes:
 - `task_id TEXT NOT NULL FK -> tasks(id)`
 - `from_agent TEXT NOT NULL`
 - `to_agent TEXT NOT NULL`
+- `goal TEXT NOT NULL` (assignee mandate; persisted for restart recovery per `13-implementation-decisions.md`)
+- `definition_of_done TEXT NOT NULL` (completion criteria; persisted for restart recovery)
 - `callback_target TEXT NOT NULL` (where completion result returns; required for routing per `05-ownership-lifecycle-and-state.md`)
 - `correlation_id TEXT NOT NULL` (audit/replay linkage per `11-observability-and-audit.md`)
 - `status TEXT NOT NULL`

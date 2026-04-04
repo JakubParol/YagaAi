@@ -31,6 +31,8 @@ Validation:
 {"status":"accepted","request_id":"req_01","task_ref":"task_01"}
 ```
 
+`task_ref` is present when the strategic owner immediately creates a task upon acceptance; `null` when task creation is deferred to a subsequent workflow step.
+
 ### `GET /requests/{request_id}`
 Returns request read model.
 

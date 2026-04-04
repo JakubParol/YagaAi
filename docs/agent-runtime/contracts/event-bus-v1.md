@@ -12,7 +12,7 @@ Examples:
 ```json
 {
   "event_id":"evt_01",
-  "dedup_key":"msg_req_123_request_received_attempt_1",
+  "dedup_key":"msg_req_123_request_received",
   "event_type":"request.received",
   "aggregate_type":"request",
   "aggregate_id":"req_123",
