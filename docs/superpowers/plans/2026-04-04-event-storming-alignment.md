@@ -36,7 +36,7 @@ The glossary is alphabetically ordered. Insert each new entry in its correct alp
 
 - [ ] **Step 1: Add `Aggregate` entry after the `Agent` entry**
 
-Insert after the `Agent` block (after the line `See \[02-core-model.md\](../02-core-model.md).` that closes the Agent entry), leaving a blank line before the new entry:
+Insert after the `Agent` block (after the line `See \[02-core-model.md\](../../agent-runtime/02-core-model.md).` that closes the Agent entry), leaving a blank line before the new entry:
 
 ```markdown
 **Aggregate**  
@@ -48,7 +48,7 @@ exactly one authoritative store.
 
 - [ ] **Step 2: Add `Bounded Context` entry after the `Artifact` entry**
 
-Insert after the `Artifact` block (after the line `See \[artifact-model.md\](artifact-model.md).`):
+Insert after the `Artifact` block (after the line `See \[artifact-model.md\](../../agent-runtime/reference/artifact-model.md).`):
 
 ```markdown
 **Bounded Context**  
@@ -67,12 +67,12 @@ Insert after the `Detached Execution` block (after "The correct default for impo
 An immutable, named fact that something happened inside a Bounded Context. Domain Events are
 the primary output of Aggregates. They cannot be undone. See also **Event** (short alias).
 Every operation in the system produces at least one Domain Event.
-See [canonical-events.md](canonical-events.md).
+See [canonical-events.md](../../agent-runtime/reference/canonical-events.md).
 ```
 
 - [ ] **Step 4: Add `External System` entry after the `Execution Timeout` entry**
 
-Insert after the `Execution Timeout` block (after "See \[10-failure-recovery-and-timeouts.md\](../10-failure-recovery-and-timeouts.md)."):
+Insert after the `Execution Timeout` block (after "See \[10-failure-recovery-and-timeouts.md\](../../agent-runtime/10-failure-recovery-and-timeouts.md)."):
 
 ```markdown
 **External System**  
@@ -83,19 +83,19 @@ Bounded Context.
 
 - [ ] **Step 5: Add `Policy` entry after the `Owner Session` entry and before `Procedural Memory / Skills`**
 
-Insert after the `Owner Session` block (after the line ending "See \[02-core-model.md\](../02-core-model.md) and \[04-channel-sessions-and-main-owner-routing.md\](../04-channel-sessions-and-main-owner-routing.md)."):
+Insert after the `Owner Session` block (after the line ending "See \[02-core-model.md\](../../agent-runtime/02-core-model.md) and \[04-channel-sessions-and-main-owner-routing.md\](../../agent-runtime/04-channel-sessions-and-main-owner-routing.md)."):
 
 ```markdown
 **Policy**  
 An automatic reaction to a Domain Event, expressed as: "Whenever [Domain Event], issue
-[Command]." Policies are first-class, named, and catalogued in [policies.md](policies.md).
+[Command]." Policies are first-class, named, and catalogued in [policies.md](../../agent-runtime/reference/policies.md).
 They are not implementation details. Every watchdog start, retry schedule, loop-limit
 escalation, and fallback invocation is a Policy.
 ```
 
 - [ ] **Step 6: Add `Read Model` entry after the `Publish Intent` entry and before `Reply Intent`**
 
-Insert after the `Publish Intent` block (after the line ending "See \[03-runtime-and-a2a.md\](../03-runtime-and-a2a.md)."):
+Insert after the `Publish Intent` block (after the line ending "See \[03-runtime-and-a2a.md\](../../agent-runtime/03-runtime-and-a2a.md)."):
 
 ```markdown
 **Read Model**  
@@ -103,7 +103,7 @@ A projection of Domain Events optimised for querying. The request view, task vie
 health view, and operator dashboard are Read Models built from the event log. Read Models
 are eventually consistent with the event log. They are not sources of command truth and
 cannot be used to validate Commands.
-See [11-observability-and-audit.md](../11-observability-and-audit.md).
+See [11-observability-and-audit.md](../../agent-runtime/11-observability-and-audit.md).
 ```
 
 - [ ] **Step 7: Commit**
@@ -126,7 +126,7 @@ Find and replace:
 ```markdown
 **Command**  
 A message expressing intent to perform an action. One of the A2A primitive types.
-See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md).
+See [03-runtime-and-a2a.md](../../agent-runtime/03-runtime-and-a2a.md).
 ```
 
 Replace with:
@@ -137,7 +137,7 @@ A message expressing intent to change state, addressed to an Aggregate. Commands
 rejected — rejection always produces a `command.rejected` Domain Event. A Command that is
 accepted always produces one or more Domain Events. No Command is silent.
 One of the A2A primitive types.
-See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md).
+See [03-runtime-and-a2a.md](../../agent-runtime/03-runtime-and-a2a.md).
 ```
 
 - [ ] **Step 2: Replace the existing `Event` entry**
@@ -147,7 +147,7 @@ Find and replace:
 ```markdown
 **Event**  
 An immutable fact that something happened. The authoritative execution trace.
-See [canonical-events.md](canonical-events.md).
+See [canonical-events.md](../../agent-runtime/reference/canonical-events.md).
 ```
 
 Replace with:
@@ -157,7 +157,7 @@ Replace with:
 An immutable fact that something happened. The authoritative execution trace.
 Also referred to as **Domain Event** — the preferred term when distinguishing from
 Commands. An Event is an immutable fact; a Command is an intent that may be refused.
-See [canonical-events.md](canonical-events.md).
+See [canonical-events.md](../../agent-runtime/reference/canonical-events.md).
 ```
 
 - [ ] **Step 3: Commit**
@@ -296,7 +296,7 @@ Add before the end of the file (which now ends at `retrieval.query_failed`):
 ## Watchdog / Timer Events
 
 Watchdogs are armed by Policies and disarmed when the condition resolves.
-See [reference/policies.md](policies.md) for which Policy arms each watchdog.
+See [reference/policies.md](../../agent-runtime/reference/policies.md) for which Policy arms each watchdog.
 
 | Event Type | Emitted by | Key fields | Meaning |
 |------------|-----------|------------|---------|
@@ -477,7 +477,7 @@ Command → Aggregate validates → Domain Event emitted
 No state change occurs without a Domain Event. A rejected Command produces a
 `command.rejected` Domain Event. There are no silent operations.
 
-See [reference/glossary.md](reference/glossary.md) for definitions of Aggregate,
+See [reference/glossary.md](../../agent-runtime/reference/glossary.md) for definitions of Aggregate,
 Bounded Context, Domain Event, Policy, Read Model, and External System.
 
 ```
@@ -755,7 +755,7 @@ For every important failure mode, the system must define:
 
 Recovery paths are Policies: automatic reactions to Domain Events with named owners and
 bounded retry clauses. Each failure mode below has a corresponding named Policy in
-[reference/policies.md](reference/policies.md) where one exists.
+[reference/policies.md](../../agent-runtime/reference/policies.md) where one exists.
 ```
 
 - [ ] **Step 2: Add Policy column to the Inbound / Normalization Failures table**
