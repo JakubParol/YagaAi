@@ -30,7 +30,7 @@ These apply to all durable flows:
 ### Main steps
 1. User sends research request on a surface session.
 2. The surface adapter creates/updates the request record and normalizes the request into `agent:main:main`.
-3. James main decides the work is durable and delegates to `agent:alex:main`.
+3. James main decides the work is durable and delegates to `agent:alex:main`. `[Policy: WatchAcceptanceTimeout fires on handoff.dispatched]`
 4. Alex accepts the handoff and performs research.
 5. Alex produces a result artifact (report, synthesis, references).
 6. Alex sends a callback to `agent:main:main` with the artifact reference.
@@ -41,9 +41,9 @@ These apply to all durable flows:
 ### State shape
 
 ```text
-request: received → normalized → delegated → awaiting_callback → reply_publish_pending → reply_published
+request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]
 
-task: Created → Accepted (Alex) → In Progress → Done
+task: Created →[task.created]→ Accepted →[task.accepted]→ In Progress →[task.started]→ Done →[task.completed]
 ```
 
 ### Callback path
@@ -54,8 +54,7 @@ James main → stored reply target → publish-capable surface session
 
 ### Escalation path
 If Alex is blocked, Alex sends a blocked event to James main.
-If publication fails after research succeeds, the request remains operationally open until retry,
-fallback, or abandonment is resolved.
+If publication fails after research succeeds: `[Policy: RetryPublicationOnFailure fires on reply.publication_failed]`; if unresolved within window: `[Policy: InvokeFallbackOnPublicationTimeout fires on watchdog.fired]`. The request remains operationally open until a terminal publication outcome is recorded.
 
 ---
 
@@ -74,7 +73,7 @@ fallback, or abandonment is resolved.
 ### Main steps
 1. User sends implementation request on a surface session.
 2. The surface adapter creates/updates the request record and normalizes the work into `agent:main:main`.
-3. James main creates or identifies the relevant US and delegates implementation to `agent:naomi:main`.
+3. James main creates or identifies the relevant US and delegates implementation to `agent:naomi:main`. `[Policy: WatchAcceptanceTimeout fires on handoff.dispatched]`
 4. Naomi accepts, plans, and executes the work.
 5. Naomi drives task execution through Mission Control and code-execution runtime(s).
 6. When implementation reaches the review point, Naomi submits to Code Review / Verify flow.
@@ -86,10 +85,10 @@ fallback, or abandonment is resolved.
 ### State shape
 
 ```text
-request: received → normalized → delegated → awaiting_callback → reply_publish_pending → reply_published
+request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]
 
-US: Created → In Progress → Code Review → Verify → Done
-Tasks: Created → Accepted → In Progress → Done (or Blocked / Escalated)
+US: Created →[flow.started]→ In Progress →[task.started]→ Code Review →[review_loop.incremented]→ Verify →[task.accepted]→ Done →[flow.completed]
+Tasks: Created →[task.created]→ Accepted →[task.accepted]→ In Progress →[task.started]→ Done →[task.completed] (or Blocked →[task.blocked] / Escalated →[task.escalated])
 ```
 
 ### Callback path
@@ -120,16 +119,16 @@ James main → stored reply target → publish-capable surface session
 1. Amos receives the US in `Code Review`.
 2. Amos reviews against definition of done.
 3. If approved: Amos / MC move the US to `Verify`.
-4. If comments: Amos returns it to `In Progress`; Naomi receives loop-return callback.
+4. If comments: `[Policy: ReturnToInProgressOnReviewComment fires on review_loop.incremented]`; Naomi receives loop-return callback with review comments as artifact.
 5. Loop repeats up to the configured limit.
-6. If the loop limit is exceeded: escalate to James main.
+6. If the loop limit is exceeded: `[Policy: EscalateOnReviewLimitReached fires on review_loop.limit_reached]`, escalating to James main.
 
 ### Verify loop
 1. Amos receives the US in `Verify`.
 2. Amos performs functional verification.
 3. If passed: MC moves the US to `Done` and terminal completion becomes visible to James main.
 4. If failed: MC returns the US to `In Progress`; Naomi receives loop-return callback.
-5. If verify does not converge: escalate to James main.
+5. If verify does not converge: `[Policy: EscalateOnVerifyLimitReached fires on verify_loop.limit_reached]`, escalating to James main.
 
 ### Dual callback pattern
 - Amos / MC → Naomi: loop returns with comments / failures
