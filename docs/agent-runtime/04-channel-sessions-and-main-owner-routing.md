@@ -395,11 +395,13 @@ when the result comes back.
 The WhatsApp adapter was never the coordination owner. The same `main` session handled
 all coordination. The channel was only responsible for ingest and final delivery.
 
-**Note on cross-channel replies:** The reply target is stored metadata, not hardwired
-to the origin channel. An explicit cross-channel reply (e.g., received via WhatsApp,
-reply via Discord) is possible as a controlled exception — but it requires an explicit
-routing decision by the strategic owner, not an implicit adapter-level override. The
-default is always: reply via the channel that originated the request.
+**Note on cross-channel replies:** Cross-channel delivery is only permitted when
+explicitly commanded — for example, a user instruction such as "send the response to
+agent X on channel Y." Even then, the instruction must be processed by `main` first:
+`main` updates the stored `reply_target` and then routes the publish instruction to
+the target channel adapter. There is no path where a channel adapter routes to another
+channel adapter directly. `main` is always in the middle. The default remains: reply
+via the channel that originated the request.
 
 ---
 
