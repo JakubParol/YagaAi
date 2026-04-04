@@ -355,47 +355,51 @@ The specialist answers the delegating owner.
 
 ---
 
-### Example: User sends via WhatsApp, expects reply via Discord
+### Example: User sends via WhatsApp, reply goes back via WhatsApp
 
 This example demonstrates the one-main invariant in action: the channel of origin does
-not determine the coordination context, and the reply target is stored metadata — not
-inferred from the transport.
+not determine which coordination context handles the work — but the reply target is
+captured at ingest and defaults to the originating channel.
 
 #### Step 1 — WhatsApp channel adapter receives the message
 `agent:<id>:whatsapp:...`
 - receives the user message,
 - captures transport metadata,
 - creates a normalized request envelope,
-- the user has indicated (or a routing rule determines) that the reply should go to Discord,
-- persists reply metadata:
+- persists reply metadata pointing back to the originating channel:
   - `origin_surface = whatsapp`
-  - `reply_target = discord`
-  - `reply_session_key = agent:<id>:discord:<channel-context>`
+  - `reply_target = whatsapp`
+  - `reply_session_key = agent:<id>:whatsapp:<chat-context>`
 - dispatches the normalized request to `agent:<id>:main`.
 
 #### Step 2 — Main becomes the coordination endpoint
 `agent:<id>:main`
 - accepts the normalized request,
 - receives the stored reply metadata,
-- the reply target being Discord is stored routing metadata — not a special case,
 - decides what to do: answer directly or delegate.
 
-If work is delegated, the reply metadata travels with the handoff so it is available when the result comes back.
+If work is delegated, the reply metadata travels with the handoff so it is available
+when the result comes back.
 
 #### Step 3 — Work is done, main decides the response
 `agent:<id>:main`
 - receives result (directly or via specialist callback),
-- checks stored reply metadata: reply target is the Discord channel,
-- routes the publish instruction to the Discord channel adapter.
+- checks stored reply metadata: reply target is the WhatsApp channel,
+- routes the publish instruction to the WhatsApp channel adapter.
 
-#### Step 4 — Discord channel adapter publishes
-`agent:<id>:discord:...`
-- publishes the reply to the user on Discord,
+#### Step 4 — WhatsApp channel adapter publishes
+`agent:<id>:whatsapp:...`
+- publishes the reply to the user on WhatsApp,
 - reports publish success or failure back.
 
-The WhatsApp adapter was never the coordination owner. The Discord adapter was never
-the execution owner. Both were transport adapters. The same `main` session handled
-both the inbound and outbound routing.
+The WhatsApp adapter was never the coordination owner. The same `main` session handled
+all coordination. The channel was only responsible for ingest and final delivery.
+
+**Note on cross-channel replies:** The reply target is stored metadata, not hardwired
+to the origin channel. An explicit cross-channel reply (e.g., received via WhatsApp,
+reply via Discord) is possible as a controlled exception — but it requires an explicit
+routing decision by the strategic owner, not an implicit adapter-level override. The
+default is always: reply via the channel that originated the request.
 
 ---
 
