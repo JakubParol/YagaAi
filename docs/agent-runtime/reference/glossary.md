@@ -5,10 +5,22 @@ A durable operational entity with a stable identity, its own memory, a defined s
 of responsibility, and ownership of assigned tasks. An agent persists across sessions.
 See [02-core-model.md](../02-core-model.md).
 
+**Aggregate**  
+A Domain Object that owns an invariant boundary: it validates incoming Commands, enforces
+business rules, and emits Domain Events. Aggregates are the only things that change state.
+In Yaga, the Aggregates are: `Agent`, `Request`, `Task`, `Handoff`, `Flow`. Each has
+exactly one authoritative store.
+
 **Artifact**  
 A work result produced by a task, passed between agents or stored for audit. Artifacts
 are durable and versioned. They are not the source of truth for request routing or
 reply-publication state. See [artifact-model.md](artifact-model.md).
+
+**Bounded Context**  
+A named subsystem with its own model, vocabulary, and Aggregate ownership boundary. In Yaga:
+**Agent Runtime** (request routing, A2A, callbacks, events, memory, indexing) and **Mission
+Control** (dev workflow state) are the two primary Bounded Contexts. Cross-context
+communication goes through explicit Domain Events and Commands, not shared mutable state.
 
 **Callback**  
 An explicit return of a result to the requester or callback target after a task completes.
@@ -51,6 +63,12 @@ The explicit acceptance criteria for a task or handoff. Required in every handof
 An execution mode for background tasks with an explicit callback contract, retry semantics,
 and a full event trail. The correct default for important work.
 
+**Domain Event**  
+An immutable, named fact that something happened inside a Bounded Context. Domain Events are
+the primary output of Aggregates. They cannot be undone. See also **Event** (short alias).
+Every operation in the system produces at least one Domain Event.
+See [canonical-events.md](canonical-events.md).
+
 **Durable Work**  
 Any user-originated work that may outlive the current interaction turn, requires specialist
 delegation, creates task or callback obligations, or requires retry, replay, recovery, or
@@ -80,6 +98,11 @@ This is different from the strategic owner of the request as a whole.
 **Execution Timeout**  
 A timeout at the runtime or worker level: the execution runtime has not responded
 within the expected window. See [10-failure-recovery-and-timeouts.md](../10-failure-recovery-and-timeouts.md).
+
+**External System**  
+A system outside a Bounded Context that emits inputs or consumes outputs. In Yaga: surface
+adapters (WhatsApp, Discord, web, CLI) are External Systems relative to the Agent Runtime
+Bounded Context.
 
 **Final Accountability**  
 The responsibility James holds toward the user for the ultimate outcome, regardless
@@ -146,6 +169,13 @@ produce multiple publish intents (e.g., intermediate updates and a final answer)
 publish intent has its own `publish_dedup_key` and tracks its own publication state.
 See [03-runtime-and-a2a.md](../03-runtime-and-a2a.md).
 
+**Read Model**  
+A projection of Domain Events optimised for querying. The request view, task view, index
+health view, and operator dashboard are Read Models built from the event log. Read Models
+are eventually consistent with the event log. They are not sources of command truth and
+cannot be used to validate Commands.
+See [11-observability-and-audit.md](../11-observability-and-audit.md).
+
 **Reply Intent**  
 A specific instance of the decision to publish a human-visible reply. Tracked with its
 own `publish_dedup_key` and publication state. Multiple reply intents may exist under
@@ -176,6 +206,12 @@ The agent's canonical coordination endpoint (`agent:<id>:main`). This is where d
 routing, acceptance, delegation, and callback handling occur. The durable owner is the
 agent; the owner session is the coordination endpoint. See [02-core-model.md](../02-core-model.md)
 and [04-channel-sessions-and-main-owner-routing.md](../04-channel-sessions-and-main-owner-routing.md).
+
+**Policy**  
+An automatic reaction to a Domain Event, expressed as: "Whenever [Domain Event], issue
+[Command]." Policies are first-class, named, and catalogued in [policies.md](policies.md).
+They are not implementation details. Every watchdog start, retry schedule, loop-limit
+escalation, and fallback invocation is a Policy.
 
 **Runtime**  
 The execution tool used by an agent: Claude Code, Codex, ACP, or similar. Subordinate
