@@ -14,7 +14,8 @@ Naomi↔Alex and Naomi↔Amos handoff envelopes, acceptance, completion.
   "definition_of_done":"Provide ranked options with trade-offs",
   "callback_target":"naomi",
   "correlation_id":"corr_01",
-  "causation_id":"evt_01"
+  "causation_id":"evt_01",
+  "dedup_key":"msg_hof_01_dispatch_1"
 }
 ```
 
@@ -41,6 +42,7 @@ Naomi↔Alex and Naomi↔Amos handoff envelopes, acceptance, completion.
 ```
 
 ## Validation
-- `handoff_id`, `from_agent`, `to_agent`, `goal`, `callback_target` required.
+- `handoff_id`, `from_agent`, `to_agent`, `goal`, `callback_target`, `dedup_key` required.
 - `from_agent != to_agent`.
 - `status` enum: `received|accepted|rejected|completed|failed|blocked`.
+- `dedup_key` MUST be stable across safe retries of the same handoff/callback intent.
