@@ -155,6 +155,12 @@ work. See [02-core-model.md](../02-core-model.md).
 The agent’s canonical `main` session key used for durable coordination, callbacks, and
 cross-agent routing.
 
+**Policy**  
+An automatic reaction to a Domain Event, expressed as: "Whenever [Domain Event], issue
+[Command]." Policies are first-class, named, and catalogued in [policies.md](policies.md).
+They are not implementation details. Every watchdog start, retry schedule, loop-limit
+escalation, and fallback invocation is a Policy.
+
 **Procedural Memory / Skills**  
 The layer of agent memory that holds validated ways of operating and effective patterns.
 See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
@@ -206,12 +212,6 @@ The agent's canonical coordination endpoint (`agent:<id>:main`). This is where d
 routing, acceptance, delegation, and callback handling occur. The durable owner is the
 agent; the owner session is the coordination endpoint. See [02-core-model.md](../02-core-model.md)
 and [04-channel-sessions-and-main-owner-routing.md](../04-channel-sessions-and-main-owner-routing.md).
-
-**Policy**  
-An automatic reaction to a Domain Event, expressed as: "Whenever [Domain Event], issue
-[Command]." Policies are first-class, named, and catalogued in [policies.md](policies.md).
-They are not implementation details. Every watchdog start, retry schedule, loop-limit
-escalation, and fallback invocation is a Policy.
 
 **Runtime**  
 The execution tool used by an agent: Claude Code, Codex, ACP, or similar. Subordinate
