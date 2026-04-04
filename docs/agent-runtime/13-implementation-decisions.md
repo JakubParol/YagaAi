@@ -250,13 +250,22 @@ need stable coordination endpoints and predictable event consumption.
 
 ### Decision 12 — Agent ↔ execution runtime interface
 
-**Chosen v1 stance:**
-- James = user-facing owner agent
-- Naomi = owner agent that can call code-execution runtime(s)
-- Amos = analytical/review agent with read/review tools
-- Alex = research agent with search/read/report tools
+**Chosen v1 stance:** All named agents in v1 (James, Naomi, Amos, Alex) are normal durable
+agents with the same architectural standing. Their differences are responsibility-domain
+differences, not architectural-species differences.
 
-Execution runtimes remain subordinate to the owning agent. They are not durable owners.
+Any agent may use worker/sub sessions and harnesses/backends when appropriate for
+their domain:
+- James: user-facing coordination; orchestration and delegation work
+- Naomi: implementation domain; commonly uses code-execution backends (ACP, Claude Code,
+  Codex, acpx, etc.) via worker sessions
+- Amos: review/verify domain; uses analytical and read/review tools
+- Alex: research domain; uses search, read, and synthesis tools
+
+Harness/backend choice is an internal execution concern of the owning agent. Execution
+runtimes and worker sessions are subordinate to the owning agent and are not durable
+owners. Changing execution backend does not require changing the ownership model, the
+A2A contract layer, or Mission Control records.
 
 ---
 

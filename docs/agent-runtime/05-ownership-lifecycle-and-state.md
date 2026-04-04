@@ -203,3 +203,18 @@ A task may be done while publication remains unresolved.
 | Override status | James only |
 
 Specialists do not become owners of human-visible reply routing by default.
+
+## Workers, Harnesses, and Ownership
+
+Workers (sub sessions spawned by an owning agent) and harnesses (execution backends such as
+ACP, Claude Code, Codex, acpx) may participate in the execution of a task. They are not
+durable execution owners.
+
+Task and US ownership in v1 remains attached to the responsible agent:
+- Naomi owns implementation tasks even if she uses workers and harnesses to execute them
+- Amos owns review/verify tasks even if he uses analytical tools or sub sessions
+- James owns strategic coordination regardless of which runtime is active
+
+Harness identifiers and worker session IDs are execution metadata. They appear in run
+records and observability views, but they do not replace agent ownership fields in task
+records, handoff contracts, or Mission Control.

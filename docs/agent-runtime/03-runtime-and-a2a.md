@@ -255,6 +255,26 @@ Mission Control and other runtime consumers should be able to interact through b
 
 The Web UI host is a mandatory built-in runtime surface, but it should remain a consumer of the same stable runtime contracts rather than a separate orchestration authority.
 
+## Owner-to-Owner Delegation vs Owner-to-Worker Execution
+
+A2A contracts operate strictly at the **owning-agent layer**. Two things that look similar
+are architecturally distinct:
+
+**Owner-to-owner delegation** — an A2A handoff with an explicit contract:
+- James main → Naomi main (implementation handoff with goal, definition of done, callback target)
+- Naomi main → Amos main (handoff for code review / verify)
+
+**Owner-to-worker execution** — an internal decision of the receiving owner, invisible to A2A:
+- Naomi main may spawn one or more worker/sub sessions
+- those workers may use any harness or backend (ACP, Claude Code, Codex, acpx)
+- results return to Naomi's `main`, not directly to James or Mission Control
+
+Worker spawning and harness choice do not produce A2A handoffs and do not transfer
+ownership. Changing execution backend does not alter the ownership graph. The owner
+remains accountable for the work regardless of which harness performed the execution.
+
+---
+
 ## Detached vs Session-Bound Execution
 
 The system supports two execution modes:

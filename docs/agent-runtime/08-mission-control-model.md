@@ -163,6 +163,21 @@ MC is the only writer to US and task status in the dev flow.
 
 MC may additionally expose index/memory health and project context views, but those remain read models over runtime-owned retrieval/indexing services rather than separate MC-owned storage authorities.
 
+## Mission Control Ownership Is Agent-Level
+
+Mission Control tracks ownership at the agent level. It does not treat harnesses
+(ACP, Claude Code, Codex, acpx) or worker/sub sessions as task or US owners.
+
+- Naomi is the owner of implementation tasks in Mission Control; the harness she uses
+  is an execution detail that does not affect the ownership record
+- Amos is the owner of review/verify tasks; his tooling is an execution detail
+- James is the strategic owner of user-originated requests regardless of execution plumbing
+
+Worker session IDs and harness/backend names may appear as supporting execution context
+in observability views, but they do not appear in ownership fields. A switch from one
+execution harness to another (for example Codex → Claude Code via ACP) requires no
+change to Mission Control ownership records, task assignments, or US state.
+
 ## Relation to Request Closure
 
 A US reaching `Done` is an execution/workflow truth.

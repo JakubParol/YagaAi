@@ -91,6 +91,13 @@ See [02-core-model.md](../02-core-model.md).
 A transfer of work and execution responsibility from one agent to another. Not complete
 until explicitly accepted or rejected. See [handoff-contract.md](handoff-contract.md).
 
+**Harness / Execution Backend**  
+A tool or backend used by an owner session or worker session to perform execution.
+Examples: ACP, Claude Code, Codex, acpx. A harness is not an agent, task owner,
+or workflow owner. Harness choice is an internal execution decision of the owning agent
+and does not alter the ownership graph, A2A contracts, or Mission Control records.
+See [02-core-model.md](../02-core-model.md).
+
 **Idempotency**  
 The property that processing the same message more than once produces the same outcome
 as processing it once.
@@ -98,6 +105,7 @@ as processing it once.
 **Main Session Key**  
 The canonical owner-facing coordination endpoint for an agent, for example `agent:main:main`
 or `agent:naomi:main`. The durable owner remains the agent, not the session key.
+Also called **owner session**. See [02-core-model.md](../02-core-model.md).
 
 **Memory**  
 The persisted context of an agent, layered into working, episodic, semantic, and
@@ -160,9 +168,15 @@ It does not replace task, flow, handoff, event, or artifact.
 **Request Class**  
 Classification of a request as `session-bound` or `durable`.
 
+**Owner Session**  
+The agent's canonical coordination endpoint (`agent:<id>:main`). This is where durable
+routing, acceptance, delegation, and callback handling occur. The durable owner is the
+agent; the owner session is the coordination endpoint. See [02-core-model.md](../02-core-model.md)
+and [04-channel-sessions-and-main-owner-routing.md](../04-channel-sessions-and-main-owner-routing.md).
+
 **Runtime**  
 The execution tool used by an agent: Claude Code, Codex, ACP, or similar. Subordinate
-to the agent. Not a durable identity.
+to the agent. Not a durable identity. See also **Harness / Execution Backend**.
 
 **Semantic Memory**  
 The layer of agent memory that holds durable knowledge, decisions, preferences, and
@@ -211,6 +225,13 @@ before a US is marked Done.
 **Working Memory**  
 The layer of agent memory that holds the current operational context within a session.
 May be promoted to episodic or semantic memory. See [07-memory-model-and-vectorization.md](../07-memory-model-and-vectorization.md).
+
+**Worker / Sub Session**  
+A temporary execution context created by an owning agent to perform bounded work on
+its behalf. A worker is not a durable owner, strategic owner, or workflow owner. It
+acts under the owning agent and returns results to the owning agent's `main`. Worker
+session IDs are execution metadata; they do not replace agent ownership fields.
+See [02-core-model.md](../02-core-model.md).
 
 **Workflow Timeout (SLA Timeout)**  
 A timeout at the task or flow level: expected progress has not occurred within a defined

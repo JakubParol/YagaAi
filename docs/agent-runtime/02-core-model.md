@@ -225,6 +225,28 @@ This distinction is critical:
 A runtime is a tool the agent uses. If a worker or executor exists, it is subordinate
 to the owner, not an independent domain owner.
 
+## Agent, Owner Session, Worker Session, and Harness
+
+These four layers must not be collapsed into each other.
+
+| Layer | What it is | Examples |
+|-------|-----------|---------|
+| **Agent** | Durable operational owner with identity, memory, responsibility, and accountability | James, Naomi, Amos, Alex |
+| **Owner session (`main`)** | The agent's canonical coordination endpoint for durable routing, acceptance, delegation, and callback handling | `agent:main:main`, `agent:naomi:main`, `agent:amos:main` |
+| **Worker / sub session** | A temporary execution context created by an owning agent to perform bounded work on its behalf; not a durable owner | an implementation worker spawned by Naomi; a review-analysis worker spawned by Amos |
+| **Harness / execution backend** | A tool or backend used by an owner session or worker session to perform execution; not an agent, task owner, or workflow owner | ACP, Claude Code, Codex, acpx |
+
+### Invariant
+
+> **Agent owns. `main` coordinates. Worker executes. Harness is a tool.**
+
+A2A contracts operate between owning agents. Worker spawning and harness choice are
+internal execution decisions of the receiving owner and sit below the A2A contract layer.
+
+All named agents in v1 (James, Naomi, Amos, Alex) have the same architectural standing.
+Their differences are responsibility-domain differences, not architectural-species differences.
+Harness choice does not redefine agent identity, task ownership, or workflow ownership.
+
 ## Source-of-Truth Rules
 
 | What | Source of Truth |

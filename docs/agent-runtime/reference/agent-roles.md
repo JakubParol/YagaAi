@@ -52,7 +52,8 @@
 
 **Primary coordination endpoint:** `agent:naomi:main`
 
-**Primary runtime:** Claude Code, Codex, or ACP for code execution
+**Common execution backends:** Claude Code, Codex, ACP / acpx — execution preference,
+not identity definition. Any agent may use workers and harnesses when appropriate.
 
 **Reports to / callbacks to:** James main on terminal outcomes or escalations
 
@@ -122,5 +123,5 @@
 | Escalation authority | Yes (resolves) | No (escalates) | Yes (triggers) | No |
 | Owns reply publication truth | Yes, via request path | No | No | No |
 | Primary coordination endpoint | `agent:main:main` | `agent:naomi:main` | `agent:amos:main` | `agent:alex:main` |
-| Primary runtime | — | Claude Code / Codex / ACP | — | — |
+| Common execution backends | any when appropriate | Claude Code / Codex / ACP / acpx (execution choice, not identity) | any when appropriate | any when appropriate |
 | Memory domain | Coordination, delegation, continuity | Implementation patterns | Quality patterns | Research knowledge |
