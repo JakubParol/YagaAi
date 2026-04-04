@@ -1,9 +1,51 @@
 # State Projections v1
 
 ## Projections
-- `request_projection`: request lifecycle + publication status.
-- `task_projection`: current task owner/state/loop counters.
-- `publication_projection`: channel publication attempts and outcomes.
+
+### `request_projection`
+Request lifecycle and publication state. Primary operator view for routing and publish status.
+
+Fields:
+- `request_id TEXT PK`
+- `status TEXT NOT NULL` (lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published`)
+- `reply_publish_status TEXT NOT NULL DEFAULT 'pending'` (vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned`)
+- `origin TEXT NOT NULL`
+- `strategic_owner_agent_id TEXT`
+- `reply_target_channel TEXT NOT NULL`
+- `reply_target_session_key TEXT NOT NULL`
+- `correlation_id TEXT NOT NULL`
+- `last_stream_sequence BIGINT NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
+
+### `task_projection`
+Current task owner, state, and loop counters. Read by policy handlers (escalation gates).
+
+Fields:
+- `task_id TEXT PK`
+- `request_id TEXT` (nullable for tasks not tied to a user request)
+- `owner_agent TEXT NOT NULL`
+- `state TEXT NOT NULL` (canonical task statuses per `reference/canonical-statuses.md`)
+- `priority TEXT NOT NULL DEFAULT 'normal'`
+- `review_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnReviewLimitReached fires at >= 3)
+- `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires at >= 2)
+- `callback_target TEXT NOT NULL`
+- `last_stream_sequence BIGINT NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
+
+### `publication_projection`
+Per-channel publication attempts and outcomes. Used for retry decisions and operator alerts.
+
+Fields:
+- `publication_id TEXT PK`
+- `request_id TEXT NOT NULL`
+- `channel TEXT NOT NULL`
+- `session_key TEXT NOT NULL`
+- `status TEXT NOT NULL` (`pending|attempted|published|failed|fallback_required|abandoned`)
+- `attempt_count INTEGER NOT NULL DEFAULT 0`
+- `last_attempt_at TIMESTAMP`
+- `published_at TIMESTAMP`
+- `last_stream_sequence BIGINT NOT NULL`
+- `updated_at TIMESTAMP NOT NULL`
 
 ## Materialization
 - Source of truth: `event_log`.

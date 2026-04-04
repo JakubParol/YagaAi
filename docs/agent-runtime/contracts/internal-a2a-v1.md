@@ -1,7 +1,7 @@
 # Internal A2A Contract v1
 
 ## Scope
-Naomi↔Alex and Naomi↔Amos handoff envelopes, acceptance, completion.
+All internal agent-to-agent handoff envelopes, acceptance, and completion. Covers all agent pairs: James→Naomi, James→Alex, Naomi→Amos, Naomi→Alex, and any future additions.
 
 ## Handoff Payload
 ```json
@@ -42,7 +42,7 @@ Naomi↔Alex and Naomi↔Amos handoff envelopes, acceptance, completion.
 ```
 
 ## Validation
-- `handoff_id`, `from_agent`, `to_agent`, `goal`, `callback_target`, `dedup_key` required.
+- `handoff_id`, `from_agent`, `to_agent`, `goal`, `definition_of_done`, `callback_target`, `dedup_key` required.
 - `from_agent != to_agent`.
 - `status` enum: `received|accepted|rejected|completed|failed|blocked`.
 - `dedup_key` MUST be stable across safe retries of the same handoff/callback intent.

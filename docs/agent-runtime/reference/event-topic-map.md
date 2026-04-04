@@ -1,5 +1,9 @@
 # Event Topic Map
 
+> **Coverage:** v1 thin-slice events only. Full canonical event catalogue is in `reference/canonical-events.md`. Additional topics will be mapped as bounded contexts are implemented.
+>
+> **Note on consumers:** `Audit Writer` and `Metrics Pipeline` listed below are planned v1 components; they are not yet scoped in `implementation/interfaces-v1.md` or `implementation/repo-structure-v1.md` and will be added in a follow-up slice.
+
 | Canonical Event | Topic | Producer | Consumers |
 |-----------------|-------|----------|-----------|
 | `request.received` | `yaga.v1.runtime.request.received` | Surface Adapter | Runtime Orchestrator, Audit Writer |

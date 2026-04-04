@@ -26,7 +26,7 @@ Examples:
 }
 ```
 
-Required fields: `event_id,dedup_key,event_type,aggregate_type,aggregate_id,occurred_at,correlation_id,schema_version,stream_sequence,payload`.
+Required fields: `event_id,dedup_key,event_type,aggregate_type,aggregate_id,occurred_at,actor,correlation_id,schema_version,stream_sequence,payload`. `causation_id` is required except on root events (first event in a causal chain), where it MAY be omitted.
 
 Aggregate stream key is defined as `aggregate_type + ":" + aggregate_id` and is the key used for partitioning and ordering.
 

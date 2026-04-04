@@ -34,6 +34,24 @@ Validation:
 ### `GET /requests/{request_id}`
 Returns request read model.
 
+**Response `200 OK`**
+```json
+{
+  "request_id": "req_01",
+  "status": "delegated",
+  "reply_publish_status": "pending",
+  "origin": "discord",
+  "strategic_owner_agent_id": "james",
+  "reply_target": {"channel": "discord", "session_key": "disc:abc"},
+  "correlation_id": "corr_01",
+  "created_at": "2026-04-04T10:00:00Z",
+  "updated_at": "2026-04-04T10:01:00Z"
+}
+```
+
+`status` lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published`.
+`reply_publish_status` vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned`.
+
 ### `POST /webhooks/publication-status`
 Adapter callback for publication outcome (canonical path; full route: `/api/v1/webhooks/publication-status`).
 This endpoint is a signed inbound webhook and must accept valid `X-Yaga-*` signature headers without requiring `Authorization: Bearer <token>`.
