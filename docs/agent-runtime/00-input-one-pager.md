@@ -127,8 +127,8 @@ Not as free-form chat. Not as “hope the other agent saw it”.
 
 The core primitives are:
 
-- **commands** — intent to do something
-- **events** — fact that something happened
+- **commands** — intent to do something (may be rejected; rejection emits a Domain Event)
+- **events** — immutable Domain Event facts; cannot be undone
 - **statuses** — canonical state snapshot
 - **artifacts** — produced work results
 
@@ -152,10 +152,10 @@ That one rule kills a lot of fake reliability.
 
 ## Event-Driven by Default
 
-The system should be built around events.
-Events are the nervous system of the runtime.
+The system is built around Domain Events.
+Domain Events are the nervous system of the runtime.
 
-We want events for:
+We want Domain Events for:
 
 - request ingress,
 - normalization,
@@ -169,6 +169,10 @@ We want events for:
 - reconciliation,
 - escalation,
 - and audit.
+
+Every operation — including fire-and-forget messages, adapter notifications, watchdog pings,
+memory writes, and internal state transitions — emits a Domain Event. There are no silent
+operations. If it happened, there is an event for it.
 
 Why this matters:
 
