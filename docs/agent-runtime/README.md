@@ -51,6 +51,7 @@ Read in order. Each document assumes the previous ones.
 13. [12-governance-and-v1-boundaries.md](12-governance-and-v1-boundaries.md) — v1 scope, non-goals, control points
 14. [13-implementation-decisions.md](13-implementation-decisions.md) — blocking implementation choices for request/routing/publication
 15. [14-hld-runtime-shape-and-installation.md](14-hld-runtime-shape-and-installation.md) — runtime shape, deployment patterns
+16. [15-tech-stack.md](15-tech-stack.md) — concrete technology choices with rationale
 
 The `reference/` directory contains canonical definitions you can link to from anywhere.
 
@@ -73,6 +74,7 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [12-governance-and-v1-boundaries.md](12-governance-and-v1-boundaries.md) | v1 scope, non-goals, human control points, edge-case tests |
 | [13-implementation-decisions.md](13-implementation-decisions.md) | Blocking implementation decisions for request/routing/publication |
 | [14-hld-runtime-shape-and-installation.md](14-hld-runtime-shape-and-installation.md) | Recommended runtime shape, deployment patterns, Mission Control integration |
+| [15-tech-stack.md](15-tech-stack.md) | Concrete technology choices: Python/TS split, FastAPI, SQLAlchemy, event bus, LlamaIndex, Next.js |
 
 ## Reference
 
