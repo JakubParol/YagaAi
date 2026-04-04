@@ -27,7 +27,7 @@ Indexes:
 - `id TEXT PK`
 - `request_id TEXT NOT NULL FK -> requests(id)`
 - `owner_agent TEXT NOT NULL`
-- `state TEXT NOT NULL`
+- `state TEXT NOT NULL` (vocabulary: `Created|Accepted|In Progress|Review|Verify|Done|Blocked|Escalated|Cancelled` per `reference/canonical-statuses.md`)
 - `priority TEXT NOT NULL DEFAULT 'normal'`
 - `callback_target TEXT NOT NULL` (where task completion result returns; routes to strategic owner main for user-originated work)
 - `created_at TIMESTAMP NOT NULL`
@@ -45,7 +45,10 @@ Indexes:
 - `definition_of_done TEXT NOT NULL` (completion criteria; persisted for restart recovery)
 - `callback_target TEXT NOT NULL` (where completion result returns; required for routing per `05-ownership-lifecycle-and-state.md`)
 - `correlation_id TEXT NOT NULL` (audit/replay linkage per `11-observability-and-audit.md`)
-- `status TEXT NOT NULL`
+- `status TEXT NOT NULL` (vocabulary: `received|accepted|rejected|completed|failed|blocked`)
+- `outcome TEXT` (nullable; set on completion: `done|failed|blocked`)
+- `summary TEXT` (nullable; completion summary provided by assignee agent)
+- `artifacts_json TEXT` (nullable; JSON array of artifact references, e.g. `["artifact://research/v1.md"]`)
 - `dedup_key TEXT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
 

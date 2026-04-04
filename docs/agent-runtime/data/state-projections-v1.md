@@ -15,6 +15,7 @@ Fields:
 - `reply_target_session_key TEXT NOT NULL`
 - `correlation_id TEXT NOT NULL`
 - `last_stream_sequence BIGINT NOT NULL`
+- `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
 ### `task_projection`

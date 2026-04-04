@@ -33,6 +33,16 @@
 - `PublicationService`
   - `publish(reply: ReplyCommand) -> PublicationAttempted`
 
+## Background Workers (`apps/worker`)
+
+These event consumers run as background workers in `apps/worker`, not as service interfaces callable from `apps/api`:
+
+- **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
+- **Mission Control Projection Worker** — materializes review/verify loop counters in `task_projection`
+- **Agent Inbox / Assignee Inbox** — delivers dispatched handoffs to target agents; backed by `HandoffService.accept()`
+- **Requester Callback Handler** — processes handoff completions routed back to requester; backed by `HandoffService.complete()`
+- **Watchdog Policy / Retry Policy** — event-driven reactions handled by `PolicyEnforcer.handle()`
+
 ## DTO Boundaries
 - External DTOs: HTTP/webhook/A2A payloads.
 - Internal DTOs: command/event models.
