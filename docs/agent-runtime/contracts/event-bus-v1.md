@@ -13,6 +13,8 @@ Examples:
 {
   "event_id":"evt_01",
   "event_type":"request.received",
+  "aggregate_type":"request",
+  "aggregate_id":"req_123",
   "occurred_at":"2026-04-04T10:00:00Z",
   "actor":{"type":"agent","id":"james"},
   "correlation_id":"corr_01",
@@ -22,7 +24,9 @@ Examples:
 }
 ```
 
-Required fields: `event_id,event_type,occurred_at,correlation_id,version,payload`.
+Required fields: `event_id,event_type,aggregate_type,aggregate_id,occurred_at,correlation_id,version,payload`.
+
+Aggregate stream key is defined as `aggregate_type + ":" + aggregate_id` and is the key used for partitioning and ordering.
 
 ## Delivery Guarantees
 - At-least-once delivery.
