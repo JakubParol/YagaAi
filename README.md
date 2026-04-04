@@ -111,7 +111,7 @@ curl -fsSL https://yagaai.com/install.sh | bash
 
 ```
 /docs
-  /agent-runtime      — full architecture documentation (15 documents + reference)
+  /agent-runtime      — full architecture documentation (16 documents + reference)
     00  Vision, thesis, build principles
     01  System overview and mental model
     02  Core entity model (agent, request, task, handoff, event, artifact, memory)
@@ -128,7 +128,7 @@ curl -fsSL https://yagaai.com/install.sh | bash
     13  Implementation decisions
     14  HLD: runtime shape and installation
     15  Tech stack
-    /reference         — canonical glossary, events, statuses, handoff contract, agent roles
+    /reference         — canonical glossary, events, statuses, policies, handoff contract, agent roles
 ```
 
 More directories will appear as the agents start producing actual code. Watch this space.
