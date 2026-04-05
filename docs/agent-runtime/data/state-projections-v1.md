@@ -51,7 +51,8 @@ Fields:
 - `updated_at TIMESTAMP NOT NULL`
 
 ## Materialization
-- Source of truth: `event_log`.
+- Source of truth for projections: `event_log` plus authoritative runtime records where applicable.
+- For request routing/publication truth specifically, `requests` is authoritative; `request_projection` is an operator read model.
 - Projection workers consume ordered aggregate streams.
 - Upsert by projection primary key.
 

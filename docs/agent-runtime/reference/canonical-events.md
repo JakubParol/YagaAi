@@ -113,6 +113,7 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 |------------|-----------|------------|---------|
 | `execution.started` | runtime | `task_ref`, `runtime`, `actor` | Execution begun |
 | `execution.timeout` | runtime or system | `task_ref`, `runtime`, `elapsed` | Execution timed out |
+| `workflow.timeout` | runtime or system | `task_ref`, `elapsed`, `window` | Task/flow inactivity window elapsed |
 | `tool.called` | runtime | `task_ref`, `tool_name`, `inputs` | Tool invocation |
 | `tool.returned` | runtime | `task_ref`, `tool_name`, `output`, `success` | Tool result |
 
@@ -146,6 +147,7 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 | `callback.sent` | agent | `task_ref`, `callback_target`, `outcome`, `artifacts` | Result returned to requester |
 | `callback.received` | callback_target | `task_ref`, `outcome` | Requester acknowledged result |
 | `callback.failed` | system | `task_ref`, `callback_target`, `error` | Callback delivery failed |
+| `callback.timeout` | runtime or system | `task_ref`, `callback_target`, `elapsed` | Callback acknowledgement missing within callback window |
 
 ## Watchdog / Timer Events
 

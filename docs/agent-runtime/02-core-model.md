@@ -94,10 +94,14 @@ A request record carries:
 - request identity (`request_id`)
 - origin session/context metadata
 - strategic owner metadata
-- callback metadata
 - reply target metadata
 - reply publication state
 - links to task/flow execution state
+
+**Important boundary (v1):**
+- callback metadata is **not** stored as first-class fields on `request`
+- callback contract and delivery status live on `task`/`handoff` paths
+- `request` remains the source of truth for routing and human-visible publication state
 
 A request is not a replacement for:
 - task
