@@ -26,7 +26,7 @@ Indexes:
 
 ### `tasks`
 - `id TEXT PK`
-- `request_id TEXT NOT NULL FK -> requests(id)`
+- `request_id TEXT FK -> requests(id)` (nullable for agent-internal tasks not tied to a user request)
 - `owner_agent TEXT NOT NULL`
 - `state TEXT NOT NULL` (vocabulary: `Created|Accepted|In Progress|Review|Verify|Done|Blocked|Escalated|Cancelled` per `reference/canonical-statuses.md`)
 - `priority TEXT NOT NULL DEFAULT 'normal'`
@@ -39,7 +39,7 @@ Indexes:
 
 ### `handoffs`
 - `id TEXT PK`
-- `task_id TEXT NOT NULL FK -> tasks(id)`
+- `task_id TEXT NOT NULL FK -> tasks(id)` (set by the runtime at dispatch time from the originating task context; not present in the A2A wire payload — see `contracts/internal-a2a-v1.md`)
 - `from_agent TEXT NOT NULL`
 - `to_agent TEXT NOT NULL`
 - `goal TEXT NOT NULL` (assignee mandate; persisted for restart recovery per `13-implementation-decisions.md`)
@@ -70,6 +70,7 @@ Indexes:
 - `last_attempt_at TIMESTAMP`
 - `published_at TIMESTAMP`
 - `last_stream_sequence BIGINT NOT NULL DEFAULT 0`
+- `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
 Indexes:

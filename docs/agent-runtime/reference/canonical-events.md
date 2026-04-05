@@ -14,7 +14,7 @@ All events carry the following envelope fields (see `contracts/event-bus-v1.md` 
 - `occurred_at`
 - `actor`
 - `correlation_id`
-- `causation_id`
+- `causation_id` (required except on root events, where it MAY be omitted — see `contracts/event-bus-v1.md`)
 - `schema_version`
 - `stream_sequence`
 - `payload`

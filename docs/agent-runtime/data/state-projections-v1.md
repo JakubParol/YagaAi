@@ -27,8 +27,8 @@ Fields:
 - `owner_agent TEXT NOT NULL`
 - `state TEXT NOT NULL` (canonical task statuses per `reference/canonical-statuses.md`)
 - `priority TEXT NOT NULL DEFAULT 'normal'`
-- `review_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnReviewLimitReached fires at >= 3)
-- `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires at >= 2)
+- `review_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnReviewLimitReached fires at > 3 per `reference/canonical-statuses.md`)
+- `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires at > 2 per `reference/canonical-statuses.md`)
 - `callback_target TEXT NOT NULL`
 - `last_stream_sequence BIGINT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
@@ -47,6 +47,7 @@ Fields:
 - `last_attempt_at TIMESTAMP`
 - `published_at TIMESTAMP`
 - `last_stream_sequence BIGINT NOT NULL`
+- `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
 ## Materialization

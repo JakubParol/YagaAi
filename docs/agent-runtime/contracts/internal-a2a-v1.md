@@ -52,3 +52,6 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 
 ## Field Naming Note
 This contract uses `from_agent`/`to_agent` (dispatch-centric naming for v1). The full handoff field set — including `priority`, `execution_mode`, `input_artifacts`, `reply_target_ref`, and reply routing fields — is defined in `reference/handoff-contract.md`. The v1 thin-slice omits those fields; implementers adding richer handoff payloads should treat `handoff-contract.md` as the authoritative schema extension point.
+
+## Persistence Note
+`task_id` is not part of the A2A wire payload but is required (`NOT NULL`) in the `handoffs` SQL table. The runtime resolves it from the originating task context at dispatch time before writing to storage. The dispatching agent's task record is the source of this linkage.
