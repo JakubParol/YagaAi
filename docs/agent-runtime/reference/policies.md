@@ -16,8 +16,12 @@ the system is a named Policy in this catalog.
 |--------|---------------|----------------|-------|-------|
 | `WatchAcceptanceTimeout` | `handoff.dispatched` | `StartAcceptanceWatchdog` | runtime | Watchdog fires `watchdog.fired` → `handoff.timeout` if not accepted within window |
 | `EscalateOnHandoffTimeout` | `handoff.timeout` | `EscalateToStrategicOwner` | runtime | |
-| `WatchOrphanedWork` | `task.accepted` | `StartOrphanWatchdog` | runtime | Watchdog fires `execution.timeout` if no progress within window |
-| `EscalateOnOrphanTimeout` | `execution.timeout` (orphan) | `NotifyTaskOwner` → `EscalateToJames` | runtime | Two-stage: notify first, escalate if no response |
+| `WatchExecutionTimeout` | `execution.started` | `StartExecutionWatchdog` | runtime | Detects runtime/worker heartbeat loss or execution stall |
+| `RecoverOnExecutionTimeout` | `execution.timeout` | `RetryExecution` / `ReassignExecutor` | runtime | Runtime-level recovery path; not a workflow SLA escalation by default |
+| `WatchWorkflowInactivityTimeout` | `task.accepted` | `StartWorkflowWatchdog` | runtime | Detects no business-level progress within SLA window |
+| `EscalateOnWorkflowTimeout` | `workflow.timeout` | `NotifyTaskOwner` → `EscalateToJames` | runtime | Two-stage workflow escalation: notify first, escalate if unresolved |
+| `WatchCallbackTimeout` | `task.completed` | `StartCallbackWatchdog` | runtime / completing owner | Detects missing callback acknowledgement after completion |
+| `EscalateOnCallbackTimeout` | `callback.timeout` | `RetryCallback` → `EscalateToStrategicOwner` | runtime / strategic owner | Retry callback delivery first, escalate on persistent failure |
 | `WatchPublicationTimeout` | `reply.publication_attempted` | `StartPublicationWatchdog` | runtime | Watchdog fires `watchdog.fired` if no terminal outcome within policy window |
 | `RetryPublicationOnFailure` | `reply.publication_failed` | `RetryPublish` | runtime / strategic owner | Reuses same `publish_dedup_key` |
 | `InvokeFallbackOnPublicationTimeout` | `watchdog.fired` (policy: `WatchPublicationTimeout`) | `InvokeReplyFallback` | strategic owner | Requires explicit fallback target |

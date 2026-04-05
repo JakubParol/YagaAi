@@ -77,9 +77,11 @@ A **request** in this document is the ingress-scoped durable record for a user-o
 It carries:
 - request identity,
 - ownership/routing metadata,
-- callback metadata,
 - reply-target metadata,
 - publication state sufficient for retry/recovery.
+
+Callback delivery metadata stays on task/handoff and callback event paths; request does not
+duplicate callback fields as first-class request columns.
 
 ### What request is not
 A request is **not** a replacement for:
