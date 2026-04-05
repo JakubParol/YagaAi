@@ -5,14 +5,19 @@ If it happened, there is an event for it. This applies to fire-and-forget messag
 adapter notifications, watchdog activations, retry schedules, memory writes, and
 publication attempts — without exception.
 
-All events carry:
-- `correlation_id`
-- `causation_id`
-- `dedup_key`
+All events carry the following envelope fields (see `contracts/event-bus-v1.md` for the authoritative envelope schema):
+- `event_id` (unique per emission; may change across transport retries — use `dedup_key` for idempotency)
+- `dedup_key` (stable across retries of the same intent; idempotency fence)
 - `event_type`
-- `timestamp`
+- `aggregate_type`
+- `aggregate_id`
+- `occurred_at`
 - `actor`
-- `version`
+- `correlation_id`
+- `causation_id` (required except on root events, where it MAY be omitted — see `contracts/event-bus-v1.md`)
+- `schema_version`
+- `stream_sequence`
+- `payload`
 
 For user-originated durable work, events should also retain the link to `request_id`
 even when the request record remains the primary routing/publication store.
@@ -108,6 +113,7 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 |------------|-----------|------------|---------|
 | `execution.started` | runtime | `task_ref`, `runtime`, `actor` | Execution begun |
 | `execution.timeout` | runtime or system | `task_ref`, `runtime`, `elapsed` | Execution timed out |
+| `workflow.timeout` | runtime or system | `task_ref`, `elapsed`, `window` | Task/flow inactivity window elapsed |
 | `tool.called` | runtime | `task_ref`, `tool_name`, `inputs` | Tool invocation |
 | `tool.returned` | runtime | `task_ref`, `tool_name`, `output`, `success` | Tool result |
 
@@ -141,6 +147,7 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 | `callback.sent` | agent | `task_ref`, `callback_target`, `outcome`, `artifacts` | Result returned to requester |
 | `callback.received` | callback_target | `task_ref`, `outcome` | Requester acknowledged result |
 | `callback.failed` | system | `task_ref`, `callback_target`, `error` | Callback delivery failed |
+| `callback.timeout` | runtime or system | `task_ref`, `callback_target`, `elapsed` | Callback acknowledgement missing within callback window |
 
 ## Watchdog / Timer Events
 

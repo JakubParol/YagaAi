@@ -23,6 +23,18 @@ It is closer to a distributed workflow engine for agents than to a general-purpo
 
 Read in order. Each document assumes the previous ones.
 
+## Normative Order (conflict resolution)
+
+When two documents appear inconsistent, use this resolution order:
+
+1. Core domain model (`02-core-model.md`) and canonical references (`reference/`)
+2. Contracts (`contracts/`) for API/A2A/event envelope semantics
+3. Data model (`data/sql-schema-v1.md`, `data/state-projections-v1.md`)
+4. Runtime shape and ops guidance (`14-hld-runtime-shape-and-installation.md`, runbooks)
+5. Implementation layout suggestions (`implementation/`)
+
+Implementation docs must not redefine core semantics; they only map them to package/process shape.
+
 **Start here for the mental model:**
 1. [00-input-one-pager.md](00-input-one-pager.md) — vision and build principles
 2. [01-system-overview.md](01-system-overview.md) — high-level mental model

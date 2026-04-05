@@ -1,0 +1,87 @@
+# Interfaces v1
+
+## Services
+
+Capability tags:
+- `core-slice` — required for minimum runtime bring-up.
+- `full-v1` — required for full local operator/UI/CLI surface.
+
+- `IngressService`
+  - `accept_request(command: AcceptRequestCommand) -> RequestAccepted`
+  - Tag: `core-slice`
+
+- `OrchestratorService`
+  - `create_task(command: CreateTaskCommand) -> TaskCreated`
+  - `dispatch_handoff(command: DispatchHandoffCommand) -> HandoffDispatched`
+  - Tag: `core-slice`
+
+- `HandoffService`
+  - `accept(command: AcceptHandoffCommand) -> HandoffAccepted`
+  - `complete(command: CompleteHandoffCommand) -> HandoffCompleted`
+  - `reject(command: RejectHandoffCommand) -> HandoffRejected`
+  - Tag: `core-slice`
+
+- `WatchdogService`
+  - `arm(timer: WatchdogTimer) -> WatchdogArmed`
+  - `cancel(timer_id: str) -> WatchdogCancelled`
+  - Tag: `core-slice`
+
+- `EventStoreService`
+  - `append(event: DomainEvent) -> EventAppended`
+  - `read_stream(aggregate_key: str, from_sequence: int) -> list[DomainEvent]`
+  - Tag: `core-slice`
+
+- `PolicyEnforcer`
+  - `handle(event: DomainEvent) -> list[Command]`
+  - (Reacts to domain events and emits named policy commands per `reference/policies.md`)
+  - Tag: `core-slice`
+
+- `MemoryService`
+  - `write(entry: MemoryEntry) -> MemoryWriteResult`
+  - `search(query: MemoryQuery) -> MemoryResults`
+  - Tag: `full-v1`
+
+- `PublicationService`
+  - `publish(reply: ReplyCommand) -> PublicationAttempted`
+  - Tag: `core-slice`
+
+- `RuntimeQueryService`
+  - `get_run_state(filter: RunStateFilter) -> RunStateSnapshot`
+  - `get_queue_state(filter: QueueFilter) -> QueueSnapshot`
+  - `get_event_timeline(filter: EventTimelineFilter) -> EventTimeline`
+  - Tag: `full-v1`
+
+- `RecoveryService`
+  - `retry(command: RetryCommand) -> RetryIssued`
+  - `escalate(command: EscalateCommand) -> EscalationIssued`
+  - Tag: `full-v1`
+
+- `AgentOpsService`
+  - `list_agents(filter: AgentFilter) -> AgentList`
+  - `interrupt_session(command: InterruptSessionCommand) -> SessionInterruptAccepted`
+  - Tag: `full-v1`
+
+- `DiagnosticsService`
+  - `get_runtime_health() -> RuntimeHealth`
+  - `get_memory_index_health() -> MemoryIndexHealth`
+  - Tag: `full-v1`
+
+## Background Workers (`apps/worker`)
+
+These event consumers are organized under `apps/worker` as a logical boundary. In the default
+single-process runtime they may run in-process as supervised worker loops, not necessarily as a
+separate OS process from `apps/api`:
+
+- **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
+- **Mission Control Projection Worker** — materializes review/verify loop counters in `task_projection`
+- **Agent Inbox / Assignee Inbox** — delivers dispatched handoffs to target agents; backed by `HandoffService.accept()`
+- **Requester Callback Handler** — processes handoff completions routed back to requester; backed by `HandoffService.complete()`
+- **Watchdog Policy / Retry Policy** — event-driven reactions handled by `PolicyEnforcer.handle()`
+
+## DTO Boundaries
+- External DTOs: HTTP/webhook/A2A payloads.
+- Internal DTOs: command/event models.
+- Persistence DTOs: ORM rows.
+
+Mapping rule:
+- Convert at boundary once; domain services operate only on internal DTOs.
