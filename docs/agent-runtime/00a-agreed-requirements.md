@@ -71,7 +71,7 @@ The following are fixed requirements:
 
 1. Ownership must stay explicit.
 2. Handoffs must be durable and observable.
-3. A handoff completes only when it is `accepted` or `rejected`.
+3. A handoff reaches a terminal state only when it is `accepted` or `rejected`.
 4. Task execution, callback delivery, and human-visible publication are separate concerns.
 5. Runtime events are first-class and durable.
 6. Retries, watchdogs, and stale-work detection are runtime responsibilities.
@@ -231,4 +231,3 @@ The documentation set must be aligned to these requirements:
 4. Support multiple publish intents per request.
 5. Make development-flow descriptions match the actual James -> Naomi -> Amos loop agreed above.
 6. Keep retry/watchdog/recovery responsibility in the runtime.
-
