@@ -118,7 +118,7 @@ Implement the kickoff command set:
 - `DispatchHandoffCommand`
 - `AcceptHandoffCommand`
 - `RejectHandoffCommand`
-- `CompleteHandoffCommand`
+- `CompleteTaskCommand`
 - `RecordPublicationAttemptCommand`
 - `RecordPublicationResultCommand`
 - `ScheduleJobCommand`
@@ -247,7 +247,7 @@ Implement:
 
 Definition of done:
 - handoff lifecycle updates task state correctly
-- completion records callback path correctly
+- task completion records callback path correctly
 
 ### E4. `PublicationService`
 

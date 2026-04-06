@@ -64,7 +64,7 @@ v1 is internal-first.
 - 4 agents: James, Naomi, Amos, Alex
 - user-originated durable requests with explicit routing/publication state
 - 3 main flow types: research, development, QA
-- the privileged development workflow in Mission Control
+- an optional planning/control-plane integration for development workflow (Mission Control first; others later)
 - per-agent memory with layered model
 - detached task execution with callbacks
 - explicit reply publication and recovery semantics
@@ -123,7 +123,7 @@ The system should pass these tests before v1 is considered stable:
 |--------|------------------|
 | Callback success rate | Fraction of detached tasks that deliver a callback without manual intervention |
 | Publication success rate | Fraction of durable requests whose intended reply publishes without manual intervention |
-| Handoff completion rate | Fraction of handoffs that reach accepted/done without retry or escalation |
+| Handoff acceptance rate | Fraction of handoffs that reach accepted without retry or escalation |
 | Mean time to debug a failed run | How quickly an operator can identify the failure point |
 | Duplicate-safe processing rate | Fraction of duplicate events safely deduplicated |
 | Share of tasks requiring manual recovery | Fraction of tasks needing manual intervention |

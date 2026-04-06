@@ -1,7 +1,8 @@
 # Internal A2A Contract v1
 
 ## Scope
-All internal agent-to-agent handoff envelopes, acceptance, and completion. Covers all agent pairs: James→Naomi, James→Alex, Naomi→Amos, Naomi→Alex, and any future additions.
+All internal agent-to-agent handoff envelopes plus transport/acceptance semantics.
+Covers all agent pairs: James→Naomi, James→Alex, Naomi→Amos, Naomi→Alex, and any future additions.
 
 ## Handoff Payload
 ```json
@@ -19,7 +20,7 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 }
 ```
 
-## Ack / Accept / Complete
+## Ack / Accept / Reject
 ### Ack (transport-level)
 ```json
 {"handoff_id":"hof_01","status":"received","received_at":"2026-04-04T10:00:00Z"}
@@ -30,14 +31,14 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 {"handoff_id":"hof_01","status":"accepted","owner":"alex","accepted_at":"2026-04-04T10:00:05Z"}
 ```
 
-### Complete
+### Reject
 ```json
 {
   "handoff_id":"hof_01",
-  "status":"completed",
-  "outcome":"done",
-  "summary":"3 viable options with recommendation",
-  "artifacts":["artifact://research/options-v1.md"]
+  "status":"rejected",
+  "assignee":"alex",
+  "reason":"Need clearer scope and expected output",
+  "rejected_at":"2026-04-04T10:00:05Z"
 }
 ```
 
@@ -46,13 +47,13 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 - `correlation_id` always required (audit/replay linkage per `11-observability-and-audit.md`).
 - `request_id` required when the handoff originates from user-originated durable work (per `03-runtime-and-a2a.md`); nullable for agent-internal tasks with no user request.
 - `from_agent != to_agent`.
-- `status` enum: `received|accepted|rejected|completed|failed|blocked`.
-- `outcome` enum (set on completion): `done|partial|failed|blocked|escalated`. For the kickoff slice, only `done`, `failed`, and `blocked` are expected in normal paths; `partial` and `escalated` are schema-valid but reserved for richer workflow slices.
-- `dedup_key` MUST be stable across safe retries of the same handoff/callback intent.
+- `status` enum: `received|accepted|rejected`.
+- `dedup_key` MUST be stable across safe retries of the same handoff intent.
 
-Completion note:
-- `status=completed` means the assignee emitted a terminal completion message.
-- `outcome` describes the semantic result of that completion and may still require strategic recovery or operator handling.
+Execution-completion note:
+- handoff acceptance does **not** carry execution completion
+- execution outcome returns later via task/callback events per `reference/handoff-contract.md`
+- callback/result delivery is a separate contract from handoff acceptance
 
 ## Field Naming Note
 This contract uses `from_agent`/`to_agent` (dispatch-centric naming for v1). The full handoff field set — including `priority`, `execution_mode`, `input_artifacts`, `reply_target_ref`, and reply routing fields — is defined in `reference/handoff-contract.md`. The v1 thin-slice omits those fields; implementers adding richer handoff payloads should treat `handoff-contract.md` as the authoritative schema extension point.

@@ -35,7 +35,7 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 
 | Failure | Description | Recovery owner | Default action | Policy |
 |---------|-------------|----------------|----------------|--------|
-| Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout | `WatchAcceptanceTimeout` → `EscalateOnHandoffTimeout` |
+| Lost handoff | Handoff dispatched but never acknowledged | requester / strategic owner | Escalate to strategic owner for retry or reassignment decision | `WatchAcceptanceTimeout` → `EscalateOnHandoffTimeout` |
 | Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op | — |
 | Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, escalate callback recovery | `WatchCallbackTimeout` → `EscalateOnCallbackTimeout` |
 | Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work | — |

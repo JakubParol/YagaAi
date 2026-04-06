@@ -217,7 +217,7 @@ Transcripts may help debugging, but they are not the recovery mechanism.
 | `reply_target` vs `reply_session_key` | Durable concept vs current concrete endpoint |
 | Restart recovery | Request record + event log + task state; no transcript dependency |
 | Event transport | SQLite-first durable event log + job tables |
-| Mission Control shape | Integrated runtime module with API + CLI |
+| Planning/control-plane integration shape | Optional first-class integration (Mission Control first), not a runtime prerequisite |
 | Memory/retrieval model | See `07-memory-model-and-vectorization` |
 | Vectorization storage | See `07-memory-model-and-vectorization` |
 | Web UI host | Mandatory built-in runtime surface |
@@ -275,19 +275,21 @@ A2A contract layer, or Mission Control records.
 
 ---
 
-### Decision 13 — Mission Control as component
+### Decision 13 — Planning / Control-Plane Integration Shape
 
-**Chosen v1 stance:** Mission Control remains the authoritative workflow state component
-for the development flow, but in the target product shape it should be integrated as a runtime module rather than a mandatory heavy multi-service stack.
+**Chosen v1 stance:** Mission Control is the first serious planning/control-plane integration,
+but the runtime must remain able to operate without it.
 
-The critical architectural constraint is not deployment shape. It is that MC remains the
-source of truth for US/task workflow state in the dev flow.
+The critical architectural constraint is:
+- runtime execution semantics must not depend on MC,
+- planning/work-item systems integrate with the runtime through explicit contracts,
+- Mission Control is first, but future providers (for example Jira via MCP) must remain possible.
 
-Mission Control must be reachable through both:
+Mission Control should be reachable through both:
 - API
 - CLI
 
-The built-in Web UI host is the primary operator/admin/configuration surface over Mission Control and runtime state.
+The built-in Web UI host is the primary operator/admin/configuration surface over runtime state and any integrated planning/control-plane module.
 
 ---
 

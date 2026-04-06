@@ -551,14 +551,13 @@ The labels in this document are therefore:
 
 ### Practical request-level projection labels
 A practical v1 projection may include:
-- `inbound_received`
+- `received`
 - `normalized`
-- `owner_accepted`
 - `delegated`
-- `result_received`
-- `reply_publish_pending`
+- `awaiting_callback`
+- `reply_pending`
 - `reply_published`
-- `reply_publish_failed`
+- `reply_failed`
 - `fallback_required`
 - `closed`
 

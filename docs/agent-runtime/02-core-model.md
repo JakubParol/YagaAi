@@ -8,13 +8,13 @@
 | **session** | Current execution or conversation context | No (execution-scoped) | agent | event history |
 | **request** | User-originated request record with routing and publication state | Yes | strategic owner agent | request store |
 | **task** | Concrete unit of work | Yes | assigned agent | task store |
-| **flow** | Progression spanning tasks, events, and handoffs | Yes | orchestrating agent / MC | task store / MC |
+| **flow** | Progression spanning tasks, events, and handoffs | Yes | orchestrating agent / runtime | task store / runtime |
 | **handoff** | Transfer of work and execution responsibility | Yes | requester until accepted | task store |
 | **event** | Fact that something happened | Yes (immutable) | runtime / agent | event log |
 | **artifact** | Work result passed further | Yes | producing agent | artifact store |
 | **memory** | Persisted agent context | Yes | agent | memory store |
 | **project index** | Durable retrieval/index state for one managed project | Yes | runtime | project index store |
-| **work item / US** | Domain work object in Mission Control | Yes | assigned agent | Mission Control |
+| **work item / US** | Domain work object in an optional planning system (for example Mission Control) | Yes | assigned agent | planning system |
 
 ## Event Storming Model
 
@@ -29,8 +29,8 @@ Agent | Request | Task | Handoff | Flow
 **Bounded Contexts:**
 
 ```
-Agent Runtime   — owns: request routing, A2A, callbacks, events, memory, indexing
-Mission Control — owns: dev workflow state (US, tasks, review/verify loops)
+Agent Runtime   — owns: request routing, A2A, callbacks, events, retries, watchdogs, memory, indexing
+Planning System — optional integration owning work-item planning context (for example MC, later Jira via MCP)
 ```
 
 **External Systems** (relative to the Agent Runtime Bounded Context):
@@ -220,12 +220,13 @@ It is a retrieval accelerator over canonical source material.
 
 ### Work Item / User Story
 
-A work item is a domain-level concept in Mission Control. It is a specialization of
-the generic `flow` concept for the development workflow.
+A work item is a domain-level concept in a planning system. It is often linked to
+the generic `flow` concept for the development workflow, but it does not replace
+runtime execution semantics.
 
-A user story (US) is the primary work item type. It has its own lifecycle, owns a set
-of tasks, and may move through statuses like In Progress, Code Review, Verify, Done,
-Blocked, Escalated.
+A user story (US) is a common work item type for development flow. It may have its own
+lifecycle, own a set of planning tasks, and be observed in systems such as Mission
+Control, but the runtime must still function when no external planning system is present.
 
 ## Key Relations
 
@@ -250,9 +251,9 @@ user
 
 ```text
 request record
-  └─ may create / reference → flow / US
-                                └─ contains → tasks
-                                └─ tracked by → Mission Control
+  └─ may create / reference → flow / work item
+                                └─ may be tracked by → planning system
+                                └─ runtime executes via → tasks / handoffs / callbacks
                                 └─ produces → artifacts
                                 └─ returns callback → owner main
                                 └─ final human reply tracked on → request record
@@ -307,8 +308,8 @@ Harness choice does not redefine agent identity, task ownership, or workflow own
 | What | Source of Truth |
 |------|----------------|
 | Request routing + publication state | Request store |
-| Task status and execution ownership | Task store (Mission Control for dev flow) |
-| Workflow state in dev flow | Mission Control |
+| Task status and execution ownership | Task store (or runtime-linked execution store) |
+| Planning/work-item state in dev flow | Planning system when present |
 | Execution history / chronology | Event log |
 | Agent knowledge | Memory store |
 | Project retrieval/index state | Project index store |

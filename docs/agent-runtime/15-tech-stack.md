@@ -251,7 +251,7 @@ CLI command structure (from `14`):
 ```
 yaga up / down / status / logs / doctor
 yaga agent list / status / restart
-yaga mc (Mission Control subcommands)
+yaga mc (Mission Control integration subcommands, when enabled)
 yaga request list / inspect / retry
 yaga index status / rebuild
 ```

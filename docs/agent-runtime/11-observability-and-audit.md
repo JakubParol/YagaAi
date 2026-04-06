@@ -70,7 +70,7 @@ For every relevant run (request, task, flow, or session), the system must be abl
 | What | Source of Truth | Query Path |
 |------|----------------|-----------|
 | Current request routing/publication state | request store | query by `request_id` |
-| Current task status and execution owner | task store / Mission Control | direct query |
+| Current task status and execution owner | task store / runtime execution store | direct query |
 | What happened (chronology) | event log | timeline query by `correlation_id` and/or `request_id` |
 | Agent knowledge at time T | memory store (timestamped) | versioned memory read |
 | Code/doc index state | project index store | query by project / path / index run |

@@ -20,7 +20,7 @@ At the highest level, we are building:
 - a runtime for **distinct agents** with clear responsibilities,
 - a control plane for **developer-focused agent work**,
 - an architecture that treats **A2A communication, recovery, and observability** as core product features,
-- a system where **Mission Control** becomes an integral part of the development workflow,
+- a system where **planning/control-plane integrations** can support the development workflow, with Mission Control first,
 - and a platform where agents can **remember, improve, and operate reliably over time**.
 
 This is **not** meant to be:
@@ -79,14 +79,13 @@ The human stays in control. Agents do real work, but they do it inside a system 
 
 ---
 
-## Mission Control Is Integral, Not Optional
+## Mission Control Is the First Serious Integration
 
-Mission Control is not a side tool.
-It is the first serious domain workflow layer inside the runtime.
+Mission Control is the first serious planning/control-plane integration around the runtime.
 It must be reachable both through **API** and **CLI**.
 In practice, agents will often prefer the CLI for structured operational work, while UI and integrations will often prefer the API.
 
-Mission Control should be the source of truth for the **development workflow state**, including:
+When present, Mission Control may be the source of truth for the **development planning state**, including:
 
 - user stories,
 - tasks,
@@ -109,10 +108,10 @@ The Agent Runtime should remain responsible for:
 
 Short version:
 
-- **Mission Control owns dev workflow state**
+- **Mission Control is the first planning/control-plane integration**
 - **Agent Runtime owns agent coordination and runtime semantics**
 
-Together, they form one coherent system.
+When integrated, they should form one coherent operator experience.
 
 The runtime also needs a real **Web UI host**.
 This is not optional.
@@ -294,7 +293,7 @@ Practical design rules:
 - keep ownership explicit,
 - keep callback contracts explicit,
 - keep reply routing explicit,
-- keep Mission Control as the dev workflow authority,
+- keep planning integrations explicit and optional,
 - keep both CLI and API as first-class interfaces,
 - keep the Web UI as a built-in management surface,
 - keep durable records queryable,
@@ -325,7 +324,7 @@ v1 is about getting the core right:
 - distinct agents,
 - serious A2A,
 - reliable execution handoffs,
-- Mission Control integration,
+- optional planning/control-plane integration,
 - durable memory,
 - codebase vectorization and retrieval,
 - clear observability,
@@ -343,7 +342,7 @@ That means:
 - we can always see what happened,
 - we can recover from partial failure,
 - we can trust retries and dedup,
-- Mission Control and the runtime do not fight over state,
+- planning integrations and the runtime do not fight over state,
 - agents improve over time without becoming chaotic,
 - adding a new surface does not create a new ownership model,
 - and operators do not need transcript archaeology to debug a broken run.
@@ -358,7 +357,7 @@ In order:
 
 1. **Reliable A2A and ownership semantics**
 2. **Event model, callbacks, retries, and watchdogs**
-3. **Mission Control integration as first-class dev workflow, via both CLI and API**
+3. **First-class planning/control-plane integration, with Mission Control first via both CLI and API**
 4. **Built-in Web UI host for management, administration, and configuration**
 5. **Per-agent memory plus project/codebase vectorization and retrieval**
 6. **Observability, audit, and replay**
@@ -370,4 +369,4 @@ If priority 6 harms priority 1, 2, or 3, we are doing it backwards.
 
 ## One-Sentence Definition
 
-**Agent Runtime is a lightweight, event-driven control plane for developer agents: it coordinates distinct agents, makes A2A reliable, uses Mission Control as the development workflow engine through both CLI and API, includes a built-in Web UI host, and treats memory, vectorization, callbacks, and recovery as first-class concerns.**
+**Agent Runtime is a lightweight, event-driven control plane for developer agents: it coordinates distinct agents, makes A2A reliable, supports planning/control-plane integrations such as Mission Control through both CLI and API, includes a built-in Web UI host, and treats memory, vectorization, callbacks, and recovery as first-class concerns.**

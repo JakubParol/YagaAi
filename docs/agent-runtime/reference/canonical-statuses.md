@@ -47,12 +47,13 @@ Request/publication projection labels are not canonical task statuses.
 ## Request / Publication Projection Note
 
 Useful request-level projection labels may include:
+- `received`
 - `normalized`
 - `delegated`
 - `awaiting_callback`
-- `reply_publish_pending`
+- `reply_pending`
 - `reply_published`
-- `reply_publish_failed`
+- `reply_failed`
 - `fallback_required`
 - `closed`
 
@@ -67,8 +68,8 @@ The system tracks how many times a US returns from `Code Review` to `In Progress
 |------------|---------|--------|
 | 0 | First Code Review, no returns yet | Normal |
 | 1–2 | Prior returns with comments | Normal |
-| 3 | Third return; final allowed cycle | If still unresolved after this review: escalate |
-| >3 | Not allowed | `review_loop.limit_reached` emitted; auto-escalation |
+| 3 | Third return | `review_loop.limit_reached` emitted; escalate now |
+| >3 | Not allowed | illegal additional loop beyond limit |
 
 **Reset policy:** does not reset when a US moves to `Verify` or returns from `Verify`.
 
@@ -79,5 +80,5 @@ The system tracks how many times a US returns from `Verify` to `In Progress`.
 | Loop Count | Meaning | Action |
 |------------|---------|--------|
 | 0–1 | First or second verify attempt | Normal |
-| 2 | Second return from Verify; final allowed cycle | If still failing: escalate |
-| >2 | Not allowed | `verify_loop.limit_reached` emitted; auto-escalation |
+| 2 | Second return from Verify | `verify_loop.limit_reached` emitted; escalate now |
+| >2 | Not allowed | illegal additional loop beyond limit |

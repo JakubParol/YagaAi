@@ -164,12 +164,13 @@ Cross-surface continuation must not silently mutate an existing reply target wit
 
 ## Intermediate Publications
 
-The runtime must distinguish final completion from intermediate user-visible updates stored against the same request record.
+The runtime must distinguish final completion from intermediate user-visible updates under the same request.
 
 **Chosen v1 stance:**
 - intermediate status/progress updates are separate **publish attempts / reply intents** under the same `request_id`
 - each publish attempt has its own `publish_dedup_key`
-- the request record retains the durable publication history
+- the request record keeps the durable current publication summary
+- publish-intent history lives in publication records / projections, not in one scalar field on `request`
 
 This allows the owner to send progress updates without collapsing them into the final callback/completion semantics.
 
@@ -238,9 +239,12 @@ What it does guarantee per domain:
 
 | Scope | Ordering guarantee |
 |-------|--------------------|
-| Within a single `correlation_id` | Events are appended in causal order; replay preserves insertion order |
+| Within a single aggregate stream | Events are appended in stream order and replay preserves that stream order |
 | Within a single `request_id` lifecycle | Publication state transitions are monotonic (no rollback to prior state) |
 | Cross-agent A2A messages | No global ordering guarantee; each message is independently deduplicated |
+
+`correlation_id` is for linkage and replay traversal, not a promise of one total ordering across all aggregates.
+Replay should reconstruct best-effort causal order from aggregate-stream order, timestamps, and causation links.
 
 **Out-of-order delivery handling:**
 If a callback or event arrives after the state it references has already advanced, the system must:
@@ -253,7 +257,7 @@ If a callback or event arrives after the state it references has already advance
 
 ## Runtime-facing operational surfaces
 
-Mission Control and other runtime consumers should be able to interact through both:
+Mission Control, future planning/control-plane integrations, and other runtime consumers should be able to interact through both:
 - **API** — for UI, integrations, and external automation
 - **CLI** — for agents and operators doing structured operational work
 
