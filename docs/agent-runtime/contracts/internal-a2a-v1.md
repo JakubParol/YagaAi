@@ -47,7 +47,7 @@ All internal agent-to-agent handoff envelopes, acceptance, and completion. Cover
 - `request_id` required when the handoff originates from user-originated durable work (per `03-runtime-and-a2a.md`); nullable for agent-internal tasks with no user request.
 - `from_agent != to_agent`.
 - `status` enum: `received|accepted|rejected|completed|failed|blocked`.
-- `outcome` enum (set on completion): `done|partial|failed|blocked|escalated`.
+- `outcome` enum (set on completion): `done|partial|failed|blocked|escalated`. For the kickoff slice, only `done`, `failed`, and `blocked` are expected in normal paths; `partial` and `escalated` are schema-valid but reserved for richer workflow slices.
 - `dedup_key` MUST be stable across safe retries of the same handoff/callback intent.
 
 Completion note:

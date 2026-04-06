@@ -34,6 +34,8 @@ The following decisions are fixed for the kickoff slice. Do not reopen them duri
 - auth profile at kickoff: loopback-local runtime with bootstrap bearer auth for non-webhook endpoints; webhook HMAC remains mandatory
 - adapter model at kickoff: no real Discord/WhatsApp/web adapters yet; publication webhook simulates adapter callback delivery
 
+- handoff outcome values at kickoff: only `done`, `failed`, and `blocked` are expected in normal completion paths; `partial` and `escalated` are schema-valid but reserved for later workflow slices
+
 These choices are intentionally narrow. They reduce ambiguity so the first code can start.
 
 ## Scope of the First Milestone

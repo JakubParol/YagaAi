@@ -2,6 +2,11 @@
 
 > **Status:** This is the **target v1 layout** to be created during implementation. The repository currently contains only `docs/` and `README.md`. No application directories exist yet.
 
+## Directory Convention
+
+- `services/` — long-running daemons that own state and host background workers.
+- `apps/` — user-facing entry points (UI, CLI) that consume service APIs but do not own state directly.
+
 ## Proposed Layout
 ```
 /apps/web        ← Next.js Web UI (built-in surface per 14-hld-runtime-shape-and-installation.md)

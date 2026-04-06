@@ -15,10 +15,10 @@
 - `reply_publish_status TEXT NOT NULL DEFAULT 'pending'` (vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned` per `13-implementation-decisions.md`)
 - `reply_target_channel TEXT NOT NULL`
 - `reply_target_session_key TEXT NOT NULL`
-- `reply_target_json TEXT NOT NULL`
-- `reply_target_version INTEGER NOT NULL DEFAULT 1`
-- `publish_dedup_key TEXT`
-- `fallback_reply_target_json TEXT`
+- `reply_target_json TEXT NOT NULL` (JSON object: `{"channel":"<channel>","session_key":"<key>","adapter_metadata":{}}` — canonical structured reply target; `reply_target_channel` and `reply_target_session_key` are denormalized projections of this field for indexed queries)
+- `reply_target_version INTEGER NOT NULL DEFAULT 1` (incremented when reply target is updated, e.g. fallback routing)
+- `publish_dedup_key TEXT` (nullable; set when the first publication intent is created for this request. `UNIQUE` constraint only activates for non-NULL values — multiple requests without a publish intent yet are allowed)
+- `fallback_reply_target_json TEXT` (same JSON shape as `reply_target_json`; nullable; used by `InvokeReplyFallback` policy when primary target fails)
 - `strategic_owner_agent_id TEXT` (nullable; set by strategic owner at normalization; authoritative per `13-implementation-decisions.md` Decision 7)
 - `current_owner_agent_id TEXT`
 - `created_at TIMESTAMP NOT NULL`
@@ -83,6 +83,8 @@ Indexes:
 - `last_stream_sequence BIGINT NOT NULL DEFAULT 0`
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
+
+Uniqueness note: publications are keyed by `publish_dedup_key` (intent identity) rather than `(request_id, channel, session_key)` (delivery coordinates). This allows the same request to target different channels over its lifetime (e.g. fallback routing) while ensuring each publication intent is tracked exactly once.
 
 Indexes:
 - `UNIQUE(publish_dedup_key)`
@@ -159,6 +161,7 @@ Indexes:
 
 Indexes:
 - `INDEX(status, run_at)`
+- `INDEX(job_type, status, run_at)`
 - `INDEX(subject_type, subject_id)`
 
 ## Migration Strategy
