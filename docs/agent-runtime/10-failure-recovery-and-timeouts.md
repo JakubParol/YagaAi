@@ -46,8 +46,8 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 | Failure | Description | Recovery owner | Default action | Policy |
 |---------|-------------|----------------|----------------|--------|
 | Worker crash | Execution runtime terminates mid-task | task owner | Retry execution or reassign executor | — |
-| Execution timeout | Runtime/worker stopped responding inside an execution window | task owner / runtime | Retry execution, notify owner, recover execution path | `WatchExecutionTimeout` → `RecoverOnExecutionTimeout` |
-| Workflow inactivity | Task accepted but no progress events for defined period | task owner / James | Prompt owner, then escalate if needed | `WatchWorkflowInactivityTimeout` → `EscalateOnWorkflowTimeout` |
+| Execution stall / worker heartbeat loss | Runtime execution started but execution heartbeat/result is missing | runtime / task owner | Retry execution, optionally reassign executor | `WatchExecutionTimeout` → `RecoverOnExecutionTimeout` |
+| Orphaned work (workflow inactivity) | Task accepted but no business progress events for defined period | task owner / James | Workflow timeout, prompt owner, escalate if needed | `WatchWorkflowInactivityTimeout` → `EscalateOnWorkflowTimeout` |
 | Partial tool failure | Some tool calls succeed, others fail | task owner | Block with explicit reason; decide retry or escalate | — |
 | Incomplete artifact | Artifact produced but fails validation | task owner / reviewer | Return to `In Progress` with error | — |
 | Status / ownership conflict | Durable state disagrees about current owner or status | James / MC | Use authoritative store, emit reconciliation Domain Event | — |
@@ -93,19 +93,19 @@ Using one generic dedup story across all three domains creates bugs.
 - **Definition:** runtime/worker has not responded within the expected execution window
 - **Scope:** runtime level
 - **Handler:** retry execution, optionally with a new worker
-- **Event sequence:** `execution.started` → `watchdog.started` (`WatchExecutionTimeout` Policy) → `watchdog.fired` → `RecoverOnExecutionTimeout` Policy → `NotifyTaskOwner` / `RetryExecution` Command
+- **Event sequence:** `execution.started` → `watchdog.started` (`WatchExecutionTimeout` Policy) → `watchdog.fired` → `execution.timeout` → `RecoverOnExecutionTimeout` Policy → `RetryExecution` (or `ReassignExecutor`) Command
 
 ### Workflow Timeout (SLA Timeout)
 - **Definition:** expected process progress has not occurred within a business window
 - **Scope:** task / flow level
 - **Handler:** notify owner, prompt, escalate if needed
-- **Event sequence:** `task.accepted` or `task.started` → `watchdog.started` (`WatchWorkflowInactivityTimeout` Policy) → `watchdog.fired` → `EscalateOnWorkflowTimeout` Policy → `NotifyTaskOwner` → if unresolved → `EscalateToJames` Command
+- **Event sequence:** `task.accepted` → `watchdog.started` (`WatchWorkflowInactivityTimeout` Policy) → `watchdog.fired` → `workflow.timeout` → `EscalateOnWorkflowTimeout` Policy → `NotifyTaskOwner` → if unresolved → `EscalateToJames` Command
 
 ### Callback Delivery Timeout
-- **Definition:** completion callback did not reach the operational callback target within the expected window
-- **Scope:** callback delivery path
-- **Handler:** retry callback delivery, then escalate callback recovery if still unresolved
-- **Event sequence:** `task.completed` → `watchdog.started` (`WatchCallbackTimeout` Policy) → `watchdog.fired` → `EscalateOnCallbackTimeout` Policy → `NotifyTaskOwner` / `EscalateToJames` Command
+- **Definition:** task completed, but callback acknowledgement from callback target is missing within the callback window
+- **Scope:** callback delivery path (post-completion, pre-publication)
+- **Handler:** retry callback delivery, then escalate to strategic owner
+- **Event sequence:** `task.completed` → `watchdog.started` (`WatchCallbackTimeout` Policy) → `watchdog.fired` → `callback.timeout` → `EscalateOnCallbackTimeout` Policy → `RetryCallback` → if unresolved → `EscalateToStrategicOwner` Command
 
 ### Publication Timeout / Ambiguity Timeout
 - **Definition:** a user-visible publish intent has no confirmed terminal outcome within policy window

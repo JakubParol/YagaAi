@@ -24,6 +24,10 @@
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
+Notes:
+- `requests` is authoritative for routing/publication state of user-originated work.
+- Callback delivery metadata is intentionally modeled on `tasks`/`handoffs` (`callback_target`, callback events), not as first-class columns on `requests`.
+
 Indexes:
 - `UNIQUE(correlation_id)`
 - `UNIQUE(idempotency_scope, idempotency_key)`

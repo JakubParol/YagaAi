@@ -163,6 +163,9 @@ Not:
 
 One always-on local process per machine.
 
+**Formal default:** single process is the normative v1 install shape.
+Any API/worker split is an optional scaling profile and must not be required by default.
+
 Responsibilities:
 - manage agent identities and agent configs,
 - own long-running sessions and execution supervision,
@@ -497,6 +500,15 @@ That API should expose:
 - agent/session operations,
 - memory and vectorization/index health,
 - diagnostics.
+
+### API capability tags (without version bump)
+
+Expose operations with capability tags so one contract can serve staged rollout:
+
+- `core-slice` — minimum ingress/request/publication path needed for initial runtime bring-up.
+- `full-v1` — planning, queue/run state, timelines, recovery actions, agent/session ops, memory/index health, diagnostics.
+
+This is one v1 API surface with tagged capability coverage, not a `v1`/`v1.1` split.
 
 At the same time, the runtime should provide a first-class CLI surface for agents and operators.
 Agents will often find CLI interactions simpler and more robust than direct API choreography.

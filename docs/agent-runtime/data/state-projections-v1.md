@@ -62,6 +62,7 @@ Fields:
 ## Materialization
 - Event chronology source of truth: `event_log`.
 - Request-routing and publication source of truth: runtime request/publication records.
+- Request projections are operator read models, not command truth.
 - Projection workers consume ordered aggregate streams.
 - Upsert by projection primary key.
 

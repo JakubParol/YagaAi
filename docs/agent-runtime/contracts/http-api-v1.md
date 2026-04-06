@@ -8,8 +8,13 @@
 
 ## Endpoints
 
+Capability tags used below:
+- `core-slice` — minimum v1 runtime ingress + request publication path.
+- `full-v1` — complete local operator/runtime surface (planning, queue/timeline/recovery/diagnostics).
+
 ### `POST /requests`
 Create normalized request ingress.
+Tag: `core-slice`
 
 **Request**
 ```json
@@ -35,6 +40,7 @@ Validation:
 
 ### `GET /requests/{request_id}`
 Returns request read model.
+Tag: `core-slice`
 
 **Response `200 OK`**
 ```json
@@ -61,6 +67,43 @@ Interpretation:
 ### `POST /webhooks/publication-status`
 Adapter callback for publication outcome (canonical path; full route: `/api/v1/webhooks/publication-status`).
 This endpoint is a signed inbound webhook and must accept valid `X-Yaga-*` signature headers without requiring `Authorization: Bearer <token>`.
+Tag: `core-slice`
+
+### `GET /runtime/runs`
+Returns runtime run-state snapshot (active runs, states, ownership pointers).
+Tag: `full-v1`
+
+### `GET /runtime/queue`
+Returns queue depth and queued work by priority/owner.
+Tag: `full-v1`
+
+### `GET /runtime/events`
+Returns event timeline slices filtered by request/task/correlation.
+Tag: `full-v1`
+
+### `POST /runtime/recovery/retry`
+Issues bounded retry command for eligible subject (`request|task|handoff|publication`).
+Tag: `full-v1`
+
+### `POST /runtime/recovery/escalate`
+Issues explicit escalation command with reason and actor metadata.
+Tag: `full-v1`
+
+### `GET /agents`
+Lists registered agents, health, and supervision status.
+Tag: `full-v1`
+
+### `POST /agents/{agent_id}/sessions/{session_id}/interrupt`
+Requests runtime-supervised interruption of a running session.
+Tag: `full-v1`
+
+### `GET /memory/index/health`
+Returns memory/vector index health and freshness diagnostics.
+Tag: `full-v1`
+
+### `GET /diagnostics`
+Returns local runtime diagnostics bundle metadata and component health summary.
+Tag: `full-v1`
 
 ## Error Taxonomy
 | Code | HTTP | Meaning |
