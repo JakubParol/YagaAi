@@ -7,7 +7,8 @@
 
 ## Contract Matrix
 - HTTP contracts: request validation + error mapping.
-- A2A contracts: handoff acceptance/completion semantics.
+- A2A contracts: handoff acceptance/rejection semantics.
+- Task contracts: task completion semantics.
 - Event contracts: envelope schema and topic routing.
 - Webhook contracts: signature verification and retries.
 

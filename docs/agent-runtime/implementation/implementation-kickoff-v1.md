@@ -51,7 +51,7 @@ Included:
 - `POST /api/v1/webhooks/publication-status`
 - event append + ordered stream reads
 - request projection + publication projection
-- handoff accept / complete / reject service path
+- handoff accept / reject service path plus task completion
 - publication-state updates from signed webhook callback
 - bounded retry/watchdog table shape and command stubs
 
@@ -190,7 +190,7 @@ For the kickoff slice, task creation is **not deferred**.
 
 ### Step 6 — Implement task + handoff orchestration
 
-Build the minimal `OrchestratorService` and `HandoffService`:
+Build the minimal `OrchestratorService`, `HandoffService`, and `TaskService`:
 - create task
 - dispatch handoff
 - accept handoff
@@ -264,7 +264,8 @@ The first milestone only needs enough machinery to prove retry/watchdog persiste
 
 Before adding Mission Control or UI, add:
 - ingress idempotency tests
-- handoff acceptance/completion tests
+- handoff acceptance/rejection tests
+- task completion tests
 - publication callback signature tests
 - duplicate callback delivery tests
 - request projection tests
@@ -277,6 +278,7 @@ The first slice should implement only these services:
 - `IngressService`
 - `OrchestratorService`
 - `HandoffService`
+- `TaskService`
 - `EventStoreService`
 - `PublicationService`
 - `PolicyEnforcer` stub
