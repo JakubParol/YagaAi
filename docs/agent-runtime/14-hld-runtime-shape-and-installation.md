@@ -318,6 +318,17 @@ That is much healthier than shipping:
 - Dapr sidecars,
 - container-only orchestration.
 
+## 5.8 Local state layout
+
+Recommended default paths:
+- global runtime DB: `~/.local/share/yaga/state.db` on Linux, `~/Library/Application Support/Yaga/state.db` on macOS
+- per-project indexes: `~/.local/share/yaga/projects/<project-id>/index.db` on Linux, `~/Library/Application Support/Yaga/projects/<project-id>/index.db` on macOS
+
+The global runtime DB is expected to hold:
+- requests, tasks, handoffs, and publication state
+- command log, event log, event outbox, and jobs
+- memory state and runtime diagnostics
+
 ---
 
 ## 6. Strong Recommendation: Make Mission Control a Module, Not a Stack
@@ -380,7 +391,7 @@ Why:
 - easy backup/export,
 - easy diagnostics.
 
-**Global runtime DB** (`~/.yaga/state.db`) — use SQLite for:
+**Global runtime DB** (`~/.local/share/yaga/state.db` on Linux, `~/Library/Application Support/Yaga/state.db` on macOS) — use SQLite for:
 - request records (source of truth for routing and `reply_publish_status`),
 - task/run state,
 - event log (append-only, dedup by `dedup_key`, replayable),
@@ -388,7 +399,7 @@ Why:
 - Mission Control planning/read-model state,
 - agent memory records, memory embeddings (via sqlite-vec), memory FTS indexes (via FTS5).
 
-**Per-project index DBs** (`~/.yaga/projects/<project-id>/index.db`) — separate SQLite files for:
+**Per-project index DBs** (`~/.local/share/yaga/projects/<project-id>/index.db` on Linux, `~/Library/Application Support/Yaga/projects/<project-id>/index.db` on macOS) — separate SQLite files for:
 - codebase chunks and chunk embeddings,
 - symbol metadata and repo map,
 - dirty queues and index repair state.

@@ -30,7 +30,8 @@ Self-improvement matters, but at v1 it does not mean autonomous self-rewriting.
 | Change type | Review required? | Approver |
 |-------------|-----------------|----------|
 | Local working notes | No | — |
-| Memory updates (episodic, semantic) | Justified; logged | — |
+| Episodic memory updates | Justified; logged | — |
+| Semantic memory promotion / correction | Yes | James / operator |
 | Behavior changes (prompts, procedures, routing) | Yes | James / operator |
 | Skill library changes | Yes | James / operator |
 | Platform changes (runtime policy, contracts, topology) | Yes | operator |
@@ -52,6 +53,8 @@ Each exception should record:
 - rollback rule
 
 No ad hoc per-feature routing exceptions are allowed outside this catalog.
+
+Current v1 catalog state: no topology exceptions are approved by default.
 
 ## v1 Scope
 

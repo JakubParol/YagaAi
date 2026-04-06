@@ -37,7 +37,7 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 |---------|-------------|----------------|----------------|--------|
 | Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout | `WatchAcceptanceTimeout` → `EscalateOnHandoffTimeout` |
 | Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op | — |
-| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, escalate | `WatchCallbackTimeout` → `EscalateOnCallbackTimeout` |
+| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, escalate callback recovery | `WatchCallbackTimeout` → `EscalateOnCallbackTimeout` |
 | Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work | — |
 | Callback arrives after reassignment | Prior owner/executor returns late result after ownership moved | strategic owner | Reconcile against current authority; record late arrival | — |
 
@@ -121,7 +121,7 @@ Using one generic dedup story across all three domains creates bugs.
 | Task accepted, no work started | Workflow | Notify owner |
 | Task in progress, no events for >N | Workflow | Notify owner; escalate if no response |
 | Handoff not accepted within window | Workflow | Retry or reassign |
-| Callback not received after completion | Callback delivery | Retry callback, then escalate |
+| Callback not received after completion | Callback delivery | Retry callback; escalate if unresolved |
 | Publish attempt has no terminal result | Publication | Reconcile, bounded retry, or fallback |
 
 ---
@@ -159,7 +159,7 @@ Used when:
 Reconciliation must preserve the audit trail and must not silently duplicate human-visible output.
 
 ### Escalate
-Implemented automatically by `EscalateOnHandoffTimeout`, `EscalateOnWorkflowTimeout`, `EscalateOnCallbackTimeout`, `EscalateOnReviewLimitReached`, and `EscalateOnVerifyLimitReached` Policies. Manual escalation applies when convergence fails despite automatic Policies firing.
+Implemented automatically by `EscalateOnHandoffTimeout`, `EscalateOnReviewLimitReached`, `EscalateOnVerifyLimitReached`, `EscalateOnWorkflowTimeout`, and `EscalateOnCallbackTimeout` Policies. Manual escalation applies when convergence fails despite automatic Policies firing.
 
 Used when:
 - retry/reassign/reconcile do not converge

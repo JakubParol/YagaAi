@@ -80,8 +80,9 @@ It carries:
 - reply-target metadata,
 - publication state sufficient for retry/recovery.
 
-Callback delivery metadata stays on task/handoff and callback event paths; request does not
-duplicate callback fields as first-class request columns.
+Operational callback-delivery metadata belongs primarily to task / handoff / callback
+paths. The request record remains the source of truth for durable request routing and
+human-visible reply publication state.
 
 ### What request is not
 A request is **not** a replacement for:
@@ -141,7 +142,25 @@ It is a delivery mechanism, not the full durable routing concept.
 
 ### Callback target
 The stored, explicit routing target for specialist completion or execution results.
-This is usually the delegating owner’s `main` session.
+This is usually the delegating owner’s `main` session and belongs to the task/handoff
+contract, not to request-state columns by default.
+
+---
+
+## Required v1 Data Elements
+
+Durable user-originated work needs these data elements somewhere in the system model:
+- request identity
+- origin metadata
+- strategic owner metadata
+- callback routing metadata for delegated execution
+- reply-target metadata
+- publication state
+
+Important clarification:
+- this list describes the logical data model,
+- not a claim that every element is stored as a first-class column on the `requests` table,
+- callback routing truth stays on task / handoff / callback paths unless an explicit design says otherwise.
 
 ### Surface session
 A presentation-capable session that can publish to the original human-facing surface.

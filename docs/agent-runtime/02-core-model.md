@@ -180,8 +180,9 @@ Events carry:
 - a correlation ID (execution lineage)
 - a causation ID (links an event to the event that caused it)
 - a dedup key (for idempotent processing)
-- a timestamp
+- `occurred_at`
 - a type and payload
+- a `schema_version`
 
 For user-originated work, events also remain linked back to the request record.
 

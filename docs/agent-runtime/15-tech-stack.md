@@ -79,7 +79,7 @@ contracts.
 **Chosen: SQLite with WAL journal mode**
 
 - Zero external dependency
-- Single file: `~/.yaga/state.db`
+- Single-machine embedded store with platform-appropriate data paths
 - WAL mode enables concurrent reads and non-blocking writes
 - `aiosqlite` provides async access
 - FTS5 for lexical search — built into SQLite
@@ -116,10 +116,10 @@ an external broker.
 
 ```
 Command arrives
-  → written to commands table (SQLite)
+  → written to command log table (SQLite)
   → CommandHandler processes
   → Domain Event(s) emitted
-  → written to events table (append-only, SQLite outbox)
+  → written to event log table (append-only) and event outbox table
   → in-process asyncio dispatch to Policy handlers
   → Read Models updated
 ```
@@ -138,9 +138,9 @@ policy). This is the audit trail and the replay source.
 
 | Table | Purpose |
 |-------|---------|
-| `commands` | Incoming intent; may be rejected |
-| `events` | Immutable facts; append-only |
-| `outbox` | Events pending in-process dispatch; cleared after delivery |
+| `command_log` | Incoming intent; may be rejected |
+| `event_log` | Immutable facts; append-only |
+| `event_outbox` | Events pending in-process dispatch; cleared after delivery |
 | `jobs` | Retry, watchdog, timeout scheduling |
 
 Every event row carries: `id`, `type`, `aggregate_id`, `aggregate_type`, `correlation_id`,

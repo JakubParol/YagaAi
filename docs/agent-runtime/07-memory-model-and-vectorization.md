@@ -217,14 +217,15 @@ This gives:
 
 ### Storage Model
 
-**Global runtime DB** (`~/.yaga/state.db`):
+**Global runtime DB** (`~/.local/share/yaga/state.db` on Linux, `~/Library/Application Support/Yaga/state.db` on macOS):
 - agents, sessions, requests
 - tasks / flows / runs
+- command log, event log, event outbox, jobs
 - memory records, memory embeddings, memory FTS indexes
 - retrieval diagnostics, indexing jobs
 - failures / repair markers
 
-**Per-project index DB** (`~/.yaga/projects/<project-id>/index.db`):
+**Per-project index DB** (`~/.local/share/yaga/projects/<project-id>/index.db` on Linux, `~/Library/Application Support/Yaga/projects/<project-id>/index.db` on macOS):
 - files with hashes / mtimes / parser versions
 - chunks and chunk embeddings
 - chunk FTS indexes

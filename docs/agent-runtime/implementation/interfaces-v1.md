@@ -66,11 +66,9 @@ Capability tags:
   - `get_memory_index_health() -> MemoryIndexHealth`
   - Tag: `full-v1`
 
-## Background Workers (`apps/worker`)
+## Background Workers (hosted inside `services/runtime`)
 
-These event consumers are organized under `apps/worker` as a logical boundary. In the default
-single-process runtime they may run in-process as supervised worker loops, not necessarily as a
-separate OS process from `apps/api`:
+These event consumers run as background loops inside the runtime daemon, not as separate default apps:
 
 - **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
 - **Mission Control Projection Worker** — materializes review/verify loop counters in `task_projection`

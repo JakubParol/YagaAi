@@ -54,6 +54,7 @@ Useful request-level projection labels may include:
 - `reply_published`
 - `reply_publish_failed`
 - `fallback_required`
+- `closed`
 
 These are operator-facing request/publication views.
 They are **not** canonical task or US statuses.
