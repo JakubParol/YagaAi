@@ -10,7 +10,7 @@
 3. Confirm payload size and format limits.
 
 ## Safe Retry
-- Reuse original `dedup_key` from the publication event envelope.
+- Reuse original `publish_dedup_key` for the same human-visible publication intent.
 - Follow backoff policy; do not hot-loop.
 
 ## Rollback / Repair

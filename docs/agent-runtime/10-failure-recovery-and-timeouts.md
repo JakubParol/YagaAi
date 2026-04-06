@@ -37,7 +37,7 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 |---------|-------------|----------------|----------------|--------|
 | Lost handoff | Handoff dispatched but never acknowledged | requester | Retry or reassign after timeout | `WatchAcceptanceTimeout` → `EscalateOnHandoffTimeout` |
 | Duplicate handoff / callback | Same handoff or callback delivered more than once | receiver | Dedup by `dedup_key`; second delivery is a no-op | — |
-| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, block/escalate | `WatchOrphanedWork` → `EscalateOnOrphanTimeout` |
+| Callback missing after task completion | Work completed but callback never received | completing owner / system | Retry callback; if persistent, escalate callback recovery | `WatchCallbackTimeout` → `EscalateOnCallbackTimeout` |
 | Callback arrives after cancellation | Late callback for cancelled work | strategic owner | Reconcile; do not silently reopen cancelled work | — |
 | Callback arrives after reassignment | Prior owner/executor returns late result after ownership moved | strategic owner | Reconcile against current authority; record late arrival | — |
 
@@ -46,7 +46,8 @@ The channel session routing model (see [04-channel-sessions-and-main-owner-routi
 | Failure | Description | Recovery owner | Default action | Policy |
 |---------|-------------|----------------|----------------|--------|
 | Worker crash | Execution runtime terminates mid-task | task owner | Retry execution or reassign executor | — |
-| Orphaned work | Task accepted but no progress events for defined period | task owner / James | Workflow timeout, prompt owner, escalate if needed | `WatchOrphanedWork` → `EscalateOnOrphanTimeout` |
+| Execution timeout | Runtime/worker stopped responding inside an execution window | task owner / runtime | Retry execution, notify owner, recover execution path | `WatchExecutionTimeout` → `RecoverOnExecutionTimeout` |
+| Workflow inactivity | Task accepted but no progress events for defined period | task owner / James | Prompt owner, then escalate if needed | `WatchWorkflowInactivityTimeout` → `EscalateOnWorkflowTimeout` |
 | Partial tool failure | Some tool calls succeed, others fail | task owner | Block with explicit reason; decide retry or escalate | — |
 | Incomplete artifact | Artifact produced but fails validation | task owner / reviewer | Return to `In Progress` with error | — |
 | Status / ownership conflict | Durable state disagrees about current owner or status | James / MC | Use authoritative store, emit reconciliation Domain Event | — |
@@ -92,13 +93,19 @@ Using one generic dedup story across all three domains creates bugs.
 - **Definition:** runtime/worker has not responded within the expected execution window
 - **Scope:** runtime level
 - **Handler:** retry execution, optionally with a new worker
-- **Event sequence:** `execution.started` → `watchdog.started` (`WatchOrphanedWork` Policy) → `watchdog.fired` → `EscalateOnOrphanTimeout` Policy → `NotifyTaskOwner` Command
+- **Event sequence:** `execution.started` → `watchdog.started` (`WatchExecutionTimeout` Policy) → `watchdog.fired` → `RecoverOnExecutionTimeout` Policy → `NotifyTaskOwner` / `RetryExecution` Command
 
 ### Workflow Timeout (SLA Timeout)
 - **Definition:** expected process progress has not occurred within a business window
 - **Scope:** task / flow level
 - **Handler:** notify owner, prompt, escalate if needed
-- **Event sequence:** `task.accepted` → `watchdog.started` (`WatchOrphanedWork` Policy) → `watchdog.fired` → `EscalateOnOrphanTimeout` Policy → `NotifyTaskOwner` → if unresolved → `EscalateToJames` Command
+- **Event sequence:** `task.accepted` or `task.started` → `watchdog.started` (`WatchWorkflowInactivityTimeout` Policy) → `watchdog.fired` → `EscalateOnWorkflowTimeout` Policy → `NotifyTaskOwner` → if unresolved → `EscalateToJames` Command
+
+### Callback Delivery Timeout
+- **Definition:** completion callback did not reach the operational callback target within the expected window
+- **Scope:** callback delivery path
+- **Handler:** retry callback delivery, then escalate callback recovery if still unresolved
+- **Event sequence:** `task.completed` → `watchdog.started` (`WatchCallbackTimeout` Policy) → `watchdog.fired` → `EscalateOnCallbackTimeout` Policy → `NotifyTaskOwner` / `EscalateToJames` Command
 
 ### Publication Timeout / Ambiguity Timeout
 - **Definition:** a user-visible publish intent has no confirmed terminal outcome within policy window
@@ -114,7 +121,7 @@ Using one generic dedup story across all three domains creates bugs.
 | Task accepted, no work started | Workflow | Notify owner |
 | Task in progress, no events for >N | Workflow | Notify owner; escalate if no response |
 | Handoff not accepted within window | Workflow | Retry or reassign |
-| Callback not received after completion | Delivery / workflow | Retry callback |
+| Callback not received after completion | Callback delivery | Retry callback; escalate if unresolved |
 | Publish attempt has no terminal result | Publication | Reconcile, bounded retry, or fallback |
 
 ---
@@ -152,7 +159,7 @@ Used when:
 Reconciliation must preserve the audit trail and must not silently duplicate human-visible output.
 
 ### Escalate
-Implemented automatically by `EscalateOnHandoffTimeout`, `EscalateOnReviewLimitReached`, `EscalateOnVerifyLimitReached`, and `EscalateOnOrphanTimeout` Policies. Manual escalation applies when convergence fails despite automatic Policies firing.
+Implemented automatically by `EscalateOnHandoffTimeout`, `EscalateOnReviewLimitReached`, `EscalateOnVerifyLimitReached`, `EscalateOnWorkflowTimeout`, and `EscalateOnCallbackTimeout` Policies. Manual escalation applies when convergence fails despite automatic Policies firing.
 
 Used when:
 - retry/reassign/reconcile do not converge

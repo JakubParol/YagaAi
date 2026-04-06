@@ -20,6 +20,7 @@ Verification:
   "event_id":"evt_100",
   "request_id":"req_01",
   "publication_id":"pub_01",
+  "publish_dedup_key":"pub_req_01_final",
   "status":"published",
   "channel":"discord",
   "session_key":"disc:abc",
@@ -30,6 +31,11 @@ Verification:
 ## Retry Semantics
 - Producer retries on non-2xx with exponential backoff (1s, 5s, 30s, 2m, 10m).
 - Max 5 attempts then dead-letter.
-- Consumer must be idempotent by `event_id`.
+- Consumer must be idempotent by webhook delivery `event_id`.
 
-> **Why `event_id` here, not `dedup_key`?** For external inbound webhooks, `event_id` is bound to the HMAC signature (it appears in the signed string and in `X-Yaga-Event-Id`). The producer guarantees `event_id` stability across retries of the same publication event. This makes `event_id` serve the idempotency-fence role that `dedup_key` serves internally. The webhook payload has no `dedup_key` field; do not add one — callers should use `event_id` exclusively.
+`event_id` here is the transport delivery identifier for this webhook callback. It is distinct
+from the internal event-bus `event_id` stored in `event_log`.
+
+`publish_dedup_key` remains the authoritative identity of the human-visible publication intent.
+The webhook uses `event_id` for transport-level idempotency and `publish_dedup_key` to reconcile
+with runtime publication state.

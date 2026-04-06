@@ -133,6 +133,12 @@ curl -fsSL https://yagaai.com/install.sh | bash
 
 More directories will appear as the agents start producing actual code. Watch this space.
 
+### Implementation Entry
+
+For implementation kickoff, start with:
+- `docs/agent-runtime/implementation/implementation-kickoff-v1.md`
+- `docs/agent-runtime/implementation/phase-1-task-breakdown-v1.md`
+
 ---
 
 ## ⚠️ Disclaimer: Here Be Dragons

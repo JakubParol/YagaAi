@@ -51,8 +51,12 @@ Returns request read model.
 }
 ```
 
-`status` lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published`.
+`status` lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published|reply_publish_failed|fallback_required|closed`.
 `reply_publish_status` vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned`.
+
+Interpretation:
+- `status` is an operator-facing request lifecycle projection, not a canonical task status.
+- `closed` means the request-level publication path reached an operational terminal state.
 
 ### `POST /webhooks/publication-status`
 Adapter callback for publication outcome (canonical path; full route: `/api/v1/webhooks/publication-status`).
@@ -80,4 +84,4 @@ Error body:
 - Same key + same payload => return original `202` response.
 - Same key + different payload => `409 CONFLICT`.
 - `Idempotency-Key` uniqueness is scoped to the authenticated caller identity (`idempotency_scope` in the `requests` table). Two different callers using the same `Idempotency-Key` value are treated as independent requests and do not conflict.
-- Callback endpoints dedupe by stable `event_id`; signature timestamp is used only for freshness/replay-window validation.
+- Callback endpoints dedupe by stable webhook delivery `event_id`; this is an external transport identifier, not the internal event-bus `event_id`. Signature timestamp is used only for freshness/replay-window validation.

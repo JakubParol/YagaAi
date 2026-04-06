@@ -41,7 +41,7 @@ These apply to all durable flows:
 ### State shape
 
 ```text
-request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]
+request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]→ closed
 
 task: Created →[task.created]→ Accepted →[task.accepted]→ In Progress →[task.started]→ Done →[task.completed]
 ```
@@ -85,7 +85,7 @@ If publication fails after research succeeds: `[Policy: RetryPublicationOnFailur
 ### State shape
 
 ```text
-request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]
+request: received →[request.received]→ normalized →[request.normalization_accepted]→ delegated →[handoff.dispatched]→ awaiting_callback →[callback.received]→ reply_publish_pending →[reply.publication_attempted]→ reply_published →[reply.published]→ closed
 
 US: Created →[flow.started]→ In Progress →[task.started]→ Code Review →[review_loop.incremented]→ Verify →[task.accepted]→ Done →[flow.completed]
 Tasks: Created →[task.created]→ Accepted →[task.accepted]→ In Progress →[task.started]→ Done →[task.completed] (or Blocked →[task.blocked] / Escalated →[task.escalated])

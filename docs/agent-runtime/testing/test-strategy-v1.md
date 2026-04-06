@@ -16,3 +16,5 @@
 - Retry: publication failure -> retry -> DLQ.
 - Duplicate delivery: idempotency on ingress and callbacks.
 - Partial failure: memory write failure should not block task completion.
+- Ambiguous publication: retry ambiguity reconciles without duplicate human-visible output.
+- Late signals: callback or publish confirmation after reassignment/cancellation reconciles against current authority.

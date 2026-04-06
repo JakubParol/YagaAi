@@ -1,6 +1,7 @@
 # Security Baseline v1
 
 ## AuthN / AuthZ
+- Local single-user install profile: bearer token or local operator session is acceptable for runtime endpoints as long as all access is still authenticated and audit-visible.
 - Service-to-service: signed JWT with short TTL. This path is used by surface adapters calling `POST /requests` and by internal services calling runtime endpoints. Each adapter has a dedicated service account with least-privilege scope.
 - Operator access: OIDC + role-based authorization.
 - Least privilege per service account.

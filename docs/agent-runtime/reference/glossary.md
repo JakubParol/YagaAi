@@ -206,7 +206,7 @@ literal session key.
 
 **Request**  
 The durable record for a user-originated unit of work. It carries request identity,
-routing metadata, callback metadata, reply-target metadata, and publication state.
+routing metadata, reply-target metadata, and publication state.
 It does not replace task, flow, handoff, event, or artifact.
 
 **Request Class**  

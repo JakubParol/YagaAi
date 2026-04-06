@@ -4,10 +4,9 @@
 
 ## Proposed Layout
 ```
-/apps/api        ← FastAPI HTTP server (ingress, webhooks, read models)
-/apps/worker     ← background event processor, watchdog loops, projection workers
-/apps/ui         ← Next.js Web UI (built-in surface per 14-hld-runtime-shape-and-installation.md)
+/apps/web        ← Next.js Web UI (built-in surface per 14-hld-runtime-shape-and-installation.md)
 /apps/cli        ← Typer CLI (yaga command per 15-tech-stack.md)
+/services/runtime ← local runtime daemon: HTTP API, webhooks, projection workers, retry/watchdog loops
 /packages/       ← Python packages (not npm workspaces; ui is the only TypeScript app)
   runtime-core
   mission-control
@@ -24,7 +23,6 @@
 - `adapters`: Discord/WhatsApp/web/CLI ingress + publication.
 - `persistence`: SQL repositories + outbox/event store.
 - `contracts`: shared schemas for HTTP/A2A/events.
-- `apps/api`: thin HTTP layer; delegates to `runtime-core` and `persistence`.
-- `apps/worker`: consumes event streams; runs projection workers, policy enforcer, retry loops.
-- `apps/ui`: read-only consumer of `apps/api`; no direct DB access.
-- `apps/cli`: thin wrapper over `apps/api` local socket; no direct DB access.
+- `services/runtime`: local runtime daemon; hosts HTTP layer plus in-process worker loops and delegates to `runtime-core` and `persistence`.
+- `apps/web`: read-only consumer of the runtime local API; no direct DB access.
+- `apps/cli`: thin wrapper over the runtime local API/socket; no direct DB access.

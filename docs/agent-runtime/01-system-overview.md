@@ -103,7 +103,7 @@ The runtime is responsible for:
 - project/code/document vectorization and retrieval
 - audit, replay, and debugging
 - controlled improvement loops
-- workflow state for the most important flows
+- hosting the Mission Control module that owns workflow state for the development flow
 - built-in Web UI host plus CLI/API operational surfaces
 
 The runtime does not try to be (at start):

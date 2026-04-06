@@ -86,6 +86,7 @@ A practical request-level projection may include labels such as:
 - `reply_published`
 - `reply_publish_failed`
 - `fallback_required`
+- `closed`
 
 These are useful operator-facing projections, not task lifecycle states.
 

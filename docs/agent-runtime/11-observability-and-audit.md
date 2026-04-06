@@ -4,8 +4,9 @@
 
 The event log is the system's backbone. Watchdogs arm from it. Policies react to it.
 Retries are scheduled from it. Read Models are derived from it. State reconstruction for
-replay and recovery flows from it. It is not an audit trail appended after the fact; it is
-the primary record from which all other views are derived.
+replay and recovery flows from it. It is not an audit trail appended after the fact.
+It is the primary record of what happened and must be joined with authoritative runtime
+records such as the request store and Mission Control state.
 
 The system must be inspectable end to end.
 
@@ -34,9 +35,9 @@ Every event must carry:
 | `causation_id` | Points to the event that caused this event |
 | `dedup_key` | Enables idempotent processing and safe redelivery |
 | `event_type` | Structured type identifier |
-| `timestamp` | When this event was emitted |
+| `occurred_at` | When this event was emitted |
 | `actor` | Which agent, runtime, or adapter produced this event |
-| `version` | Event schema version |
+| `schema_version` | Event schema version |
 
 For user-originated durable work, the system must also preserve:
 - `request_id`

@@ -87,3 +87,11 @@ The `reference/` directory contains canonical definitions you can link to from a
 | [reference/handoff-contract.md](reference/handoff-contract.md) | Required fields and semantics of a handoff |
 | [reference/artifact-model.md](reference/artifact-model.md) | Artifact types, lifecycle, and usage |
 | [reference/agent-roles.md](reference/agent-roles.md) | Agent definitions, ownership, and scope |
+
+## Implementation Start
+
+When moving from docs to code, start with:
+- [implementation/implementation-kickoff-v1.md](implementation/implementation-kickoff-v1.md) — first milestone scope, frozen kickoff decisions, exit criteria
+- [implementation/phase-1-task-breakdown-v1.md](implementation/phase-1-task-breakdown-v1.md) — concrete Phase 1 backlog by module and dependency order
+- [implementation/interfaces-v1.md](implementation/interfaces-v1.md) — service boundaries for the core slice
+- [implementation/repo-structure-v1.md](implementation/repo-structure-v1.md) — target repository layout

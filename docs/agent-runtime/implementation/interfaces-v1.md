@@ -33,9 +33,9 @@
 - `PublicationService`
   - `publish(reply: ReplyCommand) -> PublicationAttempted`
 
-## Background Workers (`apps/worker`)
+## Background Workers (hosted inside `services/runtime`)
 
-These event consumers run as background workers in `apps/worker`, not as service interfaces callable from `apps/api`:
+These event consumers run as background loops inside the runtime daemon, not as separate default apps:
 
 - **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
 - **Mission Control Projection Worker** — materializes review/verify loop counters in `task_projection`
