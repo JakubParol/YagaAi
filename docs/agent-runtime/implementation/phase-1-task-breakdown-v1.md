@@ -96,7 +96,6 @@ Implement:
 - handoff payload
 - accept payload
 - reject payload
-- complete payload
 
 Definition of done:
 - validation matches `contracts/internal-a2a-v1.md`
@@ -243,10 +242,16 @@ Definition of done:
 Implement:
 - accept
 - reject
+
+Definition of done:
+- handoff lifecycle updates task state correctly through acceptance/rejection
+
+### E3a. `TaskService`
+
+Implement:
 - complete
 
 Definition of done:
-- handoff lifecycle updates task state correctly
 - task completion records callback path correctly
 
 ### E4. `PublicationService`

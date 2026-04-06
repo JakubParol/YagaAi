@@ -190,7 +190,7 @@ For the kickoff slice, task creation is **not deferred**.
 
 ### Step 6 — Implement task + handoff orchestration
 
-Build the minimal `OrchestratorService` and `HandoffService`:
+Build the minimal `OrchestratorService`, `HandoffService`, and `TaskService`:
 - create task
 - dispatch handoff
 - accept handoff
