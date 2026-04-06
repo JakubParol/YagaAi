@@ -125,9 +125,9 @@ Note: `handoff.claimed` is removed from v1. Use `handoff.accepted` for all owner
 | `flow.completed` | system | `flow_ref`, `outcome` | Flow reached terminal state |
 | `flow.escalated` | system | `flow_ref`, `reason`, `escalation_target` | Flow escalated |
 | `review_loop.incremented` | MC | `us_ref`, `loop_count` | Code Review → In Progress transition |
-| `review_loop.limit_reached` | MC | `us_ref`, `loop_count` | Max code review returns hit |
+| `review_loop.limit_reached` | MC or planning integration | `us_ref`, `loop_count` | Review loop hit the configured escalation limit |
 | `verify_loop.incremented` | MC | `us_ref`, `loop_count` | Verify → In Progress transition |
-| `verify_loop.limit_reached` | MC | `us_ref`, `loop_count` | Max verify failures hit |
+| `verify_loop.limit_reached` | MC or planning integration | `us_ref`, `loop_count` | Verify loop hit the configured escalation limit |
 | `transition.rejected` | MC | `us_ref`, `attempted_transition`, `reason` | MC rejected an agent's intent event |
 
 ## Improvement Events

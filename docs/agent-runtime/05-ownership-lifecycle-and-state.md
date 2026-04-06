@@ -79,12 +79,13 @@ Request/publication projection labels are not canonical task statuses.
 They are a separate operational view over the request record.
 
 A practical request-level projection may include labels such as:
+- `received`
 - `normalized`
 - `delegated`
 - `awaiting_callback`
-- `reply_publish_pending`
+- `reply_pending`
 - `reply_published`
-- `reply_publish_failed`
+- `reply_failed`
 - `fallback_required`
 - `closed`
 
@@ -133,8 +134,8 @@ Escalation is not automatic retry. Escalation means a deadlock, repeated failure
 or quality/scope conflict that cannot be resolved at the specialist level.
 
 Escalation triggers include:
-- code review loop exceeded 3 returns (`review_loop.limit_reached`)
-- verify loop exceeded 2 failures (`verify_loop.limit_reached`)
+- 3rd code review return (`review_loop.limit_reached`)
+- 2nd verify failure (`verify_loop.limit_reached`)
 - blocked task with no resolution path for a defined period
 - ownership conflict between agents
 - definition-of-done disagreement not resolvable between owner and reviewer

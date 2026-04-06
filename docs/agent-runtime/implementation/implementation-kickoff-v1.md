@@ -100,7 +100,7 @@ Implement these internal commands first and do not invent a parallel set during 
 - `DispatchHandoffCommand`
 - `AcceptHandoffCommand`
 - `RejectHandoffCommand`
-- `CompleteHandoffCommand`
+- `CompleteTaskCommand`
 - `RecordPublicationAttemptCommand`
 - `RecordPublicationResultCommand`
 - `ScheduleJobCommand`
@@ -195,7 +195,7 @@ Build the minimal `OrchestratorService` and `HandoffService`:
 - dispatch handoff
 - accept handoff
 - reject handoff
-- complete handoff
+- complete task and emit callback/result events
 
 Required emitted events:
 - `task.created`
@@ -222,9 +222,9 @@ Minimum operator-facing statuses to support:
 - `normalized`
 - `delegated`
 - `awaiting_callback`
-- `reply_publish_pending`
+- `reply_pending`
 - `reply_published`
-- `reply_publish_failed`
+- `reply_failed`
 - `fallback_required`
 - `closed`
 

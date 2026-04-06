@@ -17,7 +17,6 @@
 - `reply_target_session_key TEXT NOT NULL`
 - `reply_target_json TEXT NOT NULL` (JSON object: `{"channel":"<channel>","session_key":"<key>","adapter_metadata":{}}` — canonical structured reply target; `reply_target_channel` and `reply_target_session_key` are denormalized projections of this field for indexed queries)
 - `reply_target_version INTEGER NOT NULL DEFAULT 1` (incremented when reply target is updated, e.g. fallback routing)
-- `publish_dedup_key TEXT` (nullable; set when the first publication intent is created for this request. `UNIQUE` constraint only activates for non-NULL values — multiple requests without a publish intent yet are allowed)
 - `fallback_reply_target_json TEXT` (same JSON shape as `reply_target_json`; nullable; used by `InvokeReplyFallback` policy when primary target fails)
 - `strategic_owner_agent_id TEXT` (nullable; set by strategic owner at normalization; authoritative per `13-implementation-decisions.md` Decision 7)
 - `current_owner_agent_id TEXT`
@@ -31,7 +30,6 @@ Notes:
 Indexes:
 - `UNIQUE(correlation_id)`
 - `UNIQUE(idempotency_scope, idempotency_key)`
-- `UNIQUE(publish_dedup_key)`
 - `INDEX(status, created_at)`
 - `INDEX(idempotency_scope, idempotency_key, payload_fingerprint)`
 - `INDEX(reply_publish_status, updated_at)`
@@ -58,10 +56,7 @@ Indexes:
 - `definition_of_done TEXT NOT NULL` (completion criteria; persisted for restart recovery)
 - `callback_target TEXT NOT NULL` (where completion result returns; required for routing per `05-ownership-lifecycle-and-state.md`)
 - `correlation_id TEXT NOT NULL` (audit/replay linkage per `11-observability-and-audit.md`)
-- `status TEXT NOT NULL` (vocabulary: `received|accepted|rejected|completed|failed|blocked`)
-- `outcome TEXT` (nullable; set on completion: `done|partial|failed|blocked|escalated`)
-- `summary TEXT` (nullable; completion summary provided by assignee agent)
-- `artifacts_json TEXT` (nullable; JSON array of artifact references, e.g. `["artifact://research/v1.md"]`)
+- `status TEXT NOT NULL` (vocabulary: `received|accepted|rejected`)
 - `dedup_key TEXT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
@@ -88,7 +83,7 @@ Indexes:
 - `created_at TIMESTAMP NOT NULL`
 - `updated_at TIMESTAMP NOT NULL`
 
-Uniqueness note: publications are keyed by `publish_dedup_key` (intent identity) rather than `(request_id, channel, session_key)` (delivery coordinates). This allows the same request to target different channels over its lifetime (e.g. fallback routing) while ensuring each publication intent is tracked exactly once.
+Uniqueness note: publications are keyed by `publish_dedup_key` (intent identity) rather than `(request_id, channel, session_key)` (delivery coordinates). This allows one request to produce multiple publish intents over time (progress updates, final answer, fallback routing) while ensuring each intent is tracked exactly once.
 
 Indexes:
 - `UNIQUE(publish_dedup_key)`

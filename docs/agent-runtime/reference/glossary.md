@@ -207,7 +207,6 @@ literal session key.
 **Request**  
 The durable record for a user-originated unit of work. It carries request identity,
 routing metadata, reply-target metadata, and publication state.
-routing metadata, strategic owner metadata, reply-target metadata, and publication state.
 Callback delivery metadata lives on task/handoff and callback event paths.
 It does not replace task, flow, handoff, event, or artifact.
 

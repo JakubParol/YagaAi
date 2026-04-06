@@ -17,8 +17,11 @@ Capability tags:
 
 - `HandoffService`
   - `accept(command: AcceptHandoffCommand) -> HandoffAccepted`
-  - `complete(command: CompleteHandoffCommand) -> HandoffCompleted`
   - `reject(command: RejectHandoffCommand) -> HandoffRejected`
+  - Tag: `core-slice`
+
+- `TaskService`
+  - `complete(command: CompleteTaskCommand) -> TaskCompleted`
   - Tag: `core-slice`
 
 - `WatchdogService`
@@ -71,9 +74,9 @@ Capability tags:
 These event consumers run as background loops inside the runtime daemon, not as separate default apps:
 
 - **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
-- **Mission Control Projection Worker** — materializes review/verify loop counters in `task_projection`
+- **Planning Integration Projection Worker** — materializes planning-specific loop counters when an integration such as MC is enabled
 - **Agent Inbox / Assignee Inbox** — delivers dispatched handoffs to target agents; backed by `HandoffService.accept()`
-- **Requester Callback Handler** — processes handoff completions routed back to requester; backed by `HandoffService.complete()`
+- **Requester Callback Handler** — processes task completion callbacks routed back to requester; backed by `TaskService.complete()`
 - **Watchdog Policy / Retry Policy** — event-driven reactions handled by `PolicyEnforcer.handle()`
 
 ## DTO Boundaries

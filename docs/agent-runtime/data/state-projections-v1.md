@@ -7,7 +7,7 @@ Request lifecycle and publication state. Primary operator view for routing and p
 
 Fields:
 - `request_id TEXT PK`
-- `status TEXT NOT NULL` (lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published|reply_publish_failed|fallback_required|closed`)
+- `status TEXT NOT NULL` (lifecycle: `received|normalized|delegated|awaiting_callback|reply_pending|reply_published|reply_failed|fallback_required|closed`)
 - `reply_publish_status TEXT NOT NULL DEFAULT 'pending'` (vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned`)
 - `origin TEXT NOT NULL`
 - `origin_session_key TEXT`
@@ -18,7 +18,6 @@ Fields:
 - `reply_target_session_key TEXT NOT NULL`
 - `reply_target_json TEXT NOT NULL`
 - `reply_target_version INTEGER NOT NULL`
-- `publish_dedup_key TEXT`
 - `correlation_id TEXT NOT NULL`
 - `last_stream_sequence BIGINT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
@@ -33,8 +32,8 @@ Fields:
 - `owner_agent TEXT NOT NULL`
 - `state TEXT NOT NULL` (canonical task statuses per `reference/canonical-statuses.md`)
 - `priority TEXT NOT NULL DEFAULT 'normal'`
-- `review_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnReviewLimitReached fires at > 3 per `reference/canonical-statuses.md`)
-- `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires at > 2 per `reference/canonical-statuses.md`)
+- `review_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnReviewLimitReached fires on the 3rd review return per `reference/canonical-statuses.md`)
+- `verify_loop_count INTEGER NOT NULL DEFAULT 0` (EscalateOnVerifyLimitReached fires on the 2nd verify failure per `reference/canonical-statuses.md`)
 - `callback_target TEXT NOT NULL`
 - `last_stream_sequence BIGINT NOT NULL`
 - `created_at TIMESTAMP NOT NULL`
@@ -68,7 +67,7 @@ Fields:
 
 ## Writer Responsibility
 - Runtime Projection Worker writes runtime projections.
-- Mission Control Projection Worker writes review/verify loop projections.
+- Planning-system projection workers may write planning-specific loop counters when such an integration exists.
 - No direct writes from agent executors.
 
 ## Conflict Resolution

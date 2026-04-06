@@ -2,188 +2,127 @@
 
 ## What Mission Control Is
 
-Mission Control (MC) is the first domain implementation of the generic Agent Runtime model.
-It is the privileged operational layer for the development workflow.
-It is also a built-in management/admin/configuration surface through the runtime’s Web UI host, while remaining reachable through both API and CLI.
+Mission Control (MC) is the first serious **planning + control-plane integration** for the Agent Runtime.
 
-The core runtime defines universal primitives: agent, session, request, task, flow,
-status, memory, event, and artifact. Mission Control specializes those primitives for
-the concrete development workflow: user stories, tasks, code review, verify, and escalation.
+It may provide:
+- work-item planning (`epic`, `story`, `task`, `bug`),
+- backlog and sprint context,
+- operator-facing UI,
+- agent/operator CLI,
+- control-plane visibility over execution progress,
+- manual or automated flow start from planning state.
 
-MC is not an architectural exception. It is proof that the generic model works for a
-real domain.
+Mission Control is important, but it is still an integration.
+The runtime must remain able to function without it.
+
+---
 
 ## Relation to the Runtime
 
-| Aspect | Generic Runtime | Mission Control |
-|--------|----------------|-----------------|
-| User-originated ingress | request record | linked, but not owned by MC |
-| Work unit | task | task + user story (US) |
-| Flow | flow | US lifecycle |
-| Artifact | artifact | PR, test report, review comments |
-| Status | canonical task statuses | US-specific workflow statuses |
-| Callback | callback event | assignment / status / terminal outcome events |
-| Orchestration | event routing + owner coordination | active state machine for dev flow |
-| Operator surface | runtime Web UI host | admin, management, planning, and runtime views |
-| Programmatic interface | local API | first-class API and CLI contracts |
+| Aspect | Agent Runtime | Mission Control |
+|--------|---------------|-----------------|
+| User-originated ingress | Owns | May link to it |
+| Agent execution semantics | Owns | Observes / triggers via integration |
+| Handoffs / callbacks / retries / watchdogs | Owns | Does not own |
+| Work items / planning context | Integrates with | Owns when present |
+| Backlog / sprint / planning UI | Does not own | Owns |
+| Operator-facing execution visibility | Exposes runtime truth | May present it in UI/CLI |
+
+---
 
 ## Source-of-Truth Boundary
 
-Mission Control is the source of truth for workflow state in the development flow.
-It is **not** the source of truth for request routing, terminal strategic callback authority,
-or human reply publication.
+Mission Control may be the source of truth for planning/work-item state when it is present.
+It is **not** the source of truth for runtime execution semantics.
 
-| What | Source of Truth in dev flow |
-|------|----------------------------|
-| Request routing + publication state | request record |
-| Strategic callback destination for user-originated request outcomes | owner main path / request contract |
-| US status | Mission Control |
-| Task status under a US | Mission Control |
-| Who owns the US / task | Mission Control |
-| Review loop count | Mission Control |
-| Verify outcome | Mission Control |
-| Execution trace | event log |
-| Agent knowledge | agent memory store |
+| What | Source of Truth |
+|------|-----------------|
+| Request routing + publication state | runtime request record |
+| Handoff semantics | runtime |
+| Task execution / callback / retry / watchdog state | runtime |
+| Planning work items (`epic`, `story`, `task`, backlog, sprint) | Mission Control when integrated |
+| Review / verify loop counters in MC-managed dev flow | Mission Control when integrated |
+| Chronological execution evidence | runtime event log |
 
-MC and the request record must not compete as sources of truth for the same concern.
+The runtime must not require MC to exist.
+MC must not compete with runtime for ownership of retries, callbacks, or publication truth.
 
-## Agent Ownership vs MC Orchestration
+---
 
-This boundary matters:
+## Integration Model
 
-| Domain | Owner |
-|--------|-------|
-| What the agent decides to do | agent |
-| Whether a workflow transition is allowed | Mission Control |
-| Current US/task workflow state | Mission Control |
-| Request routing / publication state | request record |
-| Strategic callback authority for user-originated requests | delegating owner main path |
-| Agent memory and knowledge | agent |
-
-MC may reject a transition if it violates process rules. Agents do not bypass MC to update
-workflow state directly.
-
-### CLI and API stance
-
-Mission Control must be usable through both:
-- **API** — for UI, integrations, and external automation
-- **CLI** — for agents and operators doing structured operational work
-
-This is not a convenience detail. In practice, agents will often find CLI interaction simpler,
-safer, and more robust than low-level API choreography.
-
-## Generic → Mission Control Mapping
-
-| Generic primitive | MC specialization |
-|------------------|------------------|
-| `request` | user-originated ingress linked to the dev flow |
-| `flow` | User Story (US) lifecycle |
-| `task` | MC task under a US |
-| `artifact` | PR reference, test result, review comment set, evidence |
-| `handoff` | Assignment event with owner, callback, and status intent |
-| `status` | `In Progress`, `Code Review`, `Verify`, `Done`, `Blocked`, `Escalated` |
-| `callback` | terminal or loop-return event back to Naomi / James |
-
-## US Lifecycle
+The intended integration path is:
 
 ```text
-Created → In Progress → Code Review → Verify → Done
-                ↓              ↓          ↓
-             Blocked      In Progress  In Progress
-                ↓
-           Escalated → (James resolves)
+planning system emits intent
+  → runtime starts or advances agent work
+  → runtime executes, retries, escalates, and records events
+  → planning system reflects resulting state through explicit contracts
 ```
 
-Key rules:
-- a US moves to `Code Review` when Naomi submits it, assigned to Amos
-- a US returns to `In Progress` when Amos has comments, reassigned to Naomi
-- code review loop is capped: max 3 returns
-- a US moves to `Verify` when Amos approves code review
-- a US returns to `In Progress` from `Verify` if Amos finds a problem
-- verify loop is capped: max 2 failures
-- a US moves to `Done` only when Amos passes verify
+For Mission Control specifically:
+- James may create epics/stories/tasks through `mc` CLI,
+- an operator may move work into backlog / active sprint,
+- a human or James may start the development flow,
+- runtime then takes responsibility for execution semantics,
+- MC shows work-item and control-plane state back to the operator.
 
-## MC Task Lifecycle
+This same shape must remain possible for future integrations such as Jira via MCP.
 
-Tasks are execution units under a US.
+---
 
-```text
-Created → Accepted → In Progress → Done
-               ↓
-            Blocked → Escalated
-```
+## Development Flow When MC Is Present
 
-Each task has:
-- a parent US reference
-- an owner
-- a status
-- optional artifacts
+The agreed baseline is:
 
-When all tasks under a US are `Done`, Naomi may submit the US to `Code Review`.
+1. A story exists in planning and is eligible to be worked.
+2. James assigns the story to Naomi via MC CLI or equivalent integration path.
+3. Runtime receives that assignment/start intent and creates runtime execution state.
+4. Naomi explicitly takes up the work.
+5. Naomi loads:
+   - the story,
+   - parent context such as epic when available,
+   - repository context.
+6. Naomi updates `main`, creates a branch, plans the work, and records tasks through the planning integration.
+7. Naomi executes tasks sequentially.
+8. Blockers escalate to James.
+9. After implementation tasks are complete, Naomi moves the story to code review.
+10. Amos performs code review.
+11. Review loops back to Naomi when needed.
+12. Review loop limit is 3; on the 3rd return the work escalates.
+13. Amos performs verify after review passes.
+14. Verify loops back when needed.
+15. Verify loop limit is 2 failures; on the 2nd failure the work escalates.
+16. Terminal successful outcome becomes `Done`.
 
-## James' Role in the Dev Flow
+---
 
-James delegates implementation to Naomi via a US assignment. After that:
-- MC tracks workflow state
-- Naomi owns execution
-- Amos owns review / verify quality gates
-- the request record still owns durable reply-routing/publication truth
+## What MC Must Not Own
 
-### Terminal callback authority in the dev flow
+Even when MC is deeply integrated, it must not become the hidden runtime core.
 
-Mission Control is **not** the strategic owner and is **not** the durable callback/publication authority for user-originated requests.
+MC must not own:
+- request routing,
+- reply publication state,
+- callback delivery truth,
+- watchdog recovery semantics,
+- stale-run detection,
+- runtime idempotency,
+- handoff acceptance semantics.
 
-The authoritative v1 rule is:
-- **terminal execution callback authority remains the delegating owner main path (`agent:main:main`)**
-- MC may emit terminal workflow events (`Done`, escalation, transition results)
-- those MC events may inform or trigger owner-side callback/publication handling
-- but MC is not the durable callback target of record for the user-originated request
+Those stay in the runtime.
 
-In short:
-- MC is the authoritative writer of dev workflow state
-- James main is the authoritative strategic callback destination for terminal dev-flow outcomes toward the request
-- the built-in Web UI host is the main operator/admin/configuration surface over this state, not a separate source of truth
+---
 
-James is notified via explicit callback or event when:
-- a US is submitted for code review (if configured)
-- a US escalates
-- a US completes (`Done`)
+## Operator Value
 
-Those notifications inform James' reply decision, but do not themselves make publication truth authoritative.
+When MC is present, it is valuable because it gives one place to see:
+- planning state,
+- assignment state,
+- backlog / sprint context,
+- whether a development flow was started,
+- what stage a story is in,
+- and runtime/control-plane visibility for agent work.
 
-## Transition Protocol
-
-1. Agent emits an **intent event** (for example `review.submitted`, `verify.passed`)
-2. MC validates the transition against process rules
-3. If valid: MC updates the US/task state and emits status/flow events
-4. If invalid: MC emits `transition.rejected` with a reason
-
-Agents do not update workflow state directly.
-MC is the only writer to US and task status in the dev flow.
-
-MC may additionally expose index/memory health and project context views, but those remain read models over runtime-owned retrieval/indexing services rather than separate MC-owned storage authorities.
-
-## Mission Control Ownership Is Agent-Level
-
-Mission Control tracks ownership at the agent level. It does not treat harnesses
-(ACP, Claude Code, Codex, acpx) or worker/sub sessions as task or US owners.
-
-- Naomi is the owner of implementation tasks in Mission Control; the harness she uses
-  is an execution detail that does not affect the ownership record
-- Amos is the owner of review/verify tasks; his tooling is an execution detail
-- James is the strategic owner of user-originated requests regardless of execution plumbing
-
-Worker session IDs and harness/backend names may appear as supporting execution context
-in observability views, but they do not appear in ownership fields. A switch from one
-execution harness to another (for example Codex → Claude Code via ACP) requires no
-change to Mission Control ownership records, task assignments, or US state.
-
-## Relation to Request Closure
-
-A US reaching `Done` is an execution/workflow truth.
-It may inform the final user-facing reply, but it does **not** mean the originating request
-is closed. The request closes only when the intended human-visible publication succeeds,
-is abandoned, or is superseded by authorized fallback.
-
-A lost or late MC terminal event is therefore a workflow/callback recovery concern,
-not a reason to treat MC as the durable owner of the request outcome.
+That makes MC a strong first integration.
+It does not make MC the foundation under the runtime.

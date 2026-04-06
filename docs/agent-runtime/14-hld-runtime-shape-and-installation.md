@@ -139,7 +139,7 @@ The recommended v1 shape is:
 |  Watchdogs / recovery loops                               |
 |  Memory and vectorization services                        |
 |  Adapter manager (chat/channel/provider integrations)     |
-|  Mission Control module / read models                     |
+|  Optional planning/control-plane integrations / read models |
 |  Local persistence                                        |
 +-----------------------------------------------------------+
 ```
@@ -175,7 +175,7 @@ Responsibilities:
 - run retries and watchdog logic,
 - emit and consume internal events,
 - manage callbacks and publication status,
-- host or expose Mission Control read models,
+- host or expose optional planning/control-plane integration read models,
 - own the prompt assembly path for all agent sessions.
 
 **Session model:** Each named agent has exactly one `main` coordination session — the durable owner
@@ -291,9 +291,9 @@ The runtime is responsible for:
 See [06-internal-prompt-architecture.md](06-internal-prompt-architecture.md) for the full
 prompt layering specification.
 
-## 5.7 Mission Control module (integrated, not separate platform in default install)
+## 5.7 Mission Control as first-party optional integration
 
-Mission Control should become a **module inside the Yaga product architecture**, not an externally mandatory multi-service platform for local installs.
+Mission Control should be treated as a **first-party optional integration** in the Yaga product architecture, not an externally mandatory multi-service platform for local installs.
 
 Mission Control remains the home for:
 - planning concepts,
@@ -305,11 +305,10 @@ Mission Control remains the home for:
 - admin/configuration/management UI flows,
 - and CLI/API contracts for operational work.
 
-But for the target product shape, it should be integrated as:
-- internal domain module,
-- local UI pages/read models,
-- runtime-owned API surface,
-- same persistence layer by default.
+But for the target product shape, it should integrate through:
+- local UI pages/read models when present,
+- stable runtime-owned API/event contracts,
+- shared local deployment ergonomics by default.
 
 That is much healthier than shipping:
 - separate API service,
@@ -331,7 +330,7 @@ The global runtime DB is expected to hold:
 
 ---
 
-## 6. Strong Recommendation: Make Mission Control a Module, Not a Stack
+## 6. Strong Recommendation: Make Mission Control an Optional Integration, Not a Stack
 
 This is the biggest HLD recommendation.
 
@@ -347,10 +346,10 @@ Mission Control behaves like a separate platform:
 
 ### Target
 Mission Control should become:
-- a **domain module**,
+- a **first-party planning/control-plane integration**,
 - a **UI/read-model layer**,
 - an **operator workflow surface**,
-- and a **schema set inside the main runtime**.
+- and a consumer of the runtime's stable local contracts.
 
 ### What to preserve from Mission Control
 Preserve:
@@ -657,7 +656,7 @@ But this must be a later deployment profile, not the baseline design pressure.
 ## 14. One-Paragraph Decision
 
 The best pattern for Yaga is **not** a Gateway-centric distributed stack by default.
-The best pattern is a **local-first runtime daemon** that owns agent execution, adapters, events, retries, watchdogs, memory, and local APIs, while **Mission Control becomes an integrated domain/UI module** instead of a separate heavy platform. Gateway-like behavior still exists where needed, but as a subsystem of the runtime. The default install should run on Linux and macOS with one command, one runtime, one local state store, and no mandatory Docker/Redis/Dapr stack.
+The best pattern is a **local-first runtime daemon** that owns agent execution, adapters, events, retries, watchdogs, memory, and local APIs, while **Mission Control remains a first-party optional planning/operator integration** instead of a separate heavy platform. Gateway-like behavior still exists where needed, but as a subsystem of the runtime. The default install should run on Linux and macOS with one command, one runtime, one local state store, and no mandatory Docker/Redis/Dapr stack.
 
 ---
 
@@ -670,7 +669,7 @@ The best pattern is a **local-first runtime daemon** that owns agent execution, 
 ### Internal subsystem names
 - **Runtime daemon** — preferred always-on process name
 - **Adapter subsystem** — preferred over “Gateway” as the whole architecture
-- **Mission Control module** — preferred integrated planning/operator layer
+- **Mission Control integration** — preferred first-party planning/operator layer
 
 ### Naming to avoid as the top-level product term
 - “Gateway” — too transport-centric

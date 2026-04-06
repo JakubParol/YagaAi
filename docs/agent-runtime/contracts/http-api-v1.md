@@ -57,7 +57,7 @@ Tag: `core-slice`
 }
 ```
 
-`status` lifecycle: `received|normalized|delegated|awaiting_callback|reply_publish_pending|reply_published|reply_publish_failed|fallback_required|closed`.
+`status` lifecycle: `received|normalized|delegated|awaiting_callback|reply_pending|reply_published|reply_failed|fallback_required|closed`.
 `reply_publish_status` vocabulary: `pending|attempted|published|failed|unknown|fallback_required|abandoned`.
 
 Interpretation:
