@@ -24,10 +24,9 @@
 
 ## Deployment Interpretation (normative)
 
-- **Default runtime topology is single-process**: one local always-on runtime daemon.
-- The `/apps/api` and `/apps/worker` split is a **logical code organization boundary**.
-- In default local install, these boundaries may run in one process as modules/threads/tasks.
-- Separate API/worker processes are an optional scaling mode, not the default v1 requirement.
+- **Default runtime topology is single-process**: one local always-on runtime daemon (`services/runtime`).
+- API handlers, projection workers, and retry/watchdog loops run in-process as async tasks within the runtime daemon.
+- Separate processes for API vs workers are an optional scaling mode, not the default v1 requirement.
 
 ## Boundaries
 - `runtime-core`: orchestration, handoffs, policies, watchdogs.
