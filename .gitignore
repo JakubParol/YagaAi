@@ -1,2 +1,32 @@
 docs/superpowers
 .remember
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# SQLite
+*.db
+*.db-journal
+*.db-wal
+
+# Environment
+.env
+.env.*
+!.env.example
