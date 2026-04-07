@@ -50,7 +50,7 @@ Included:
 - `GET /api/v1/requests/{request_id}`
 - `POST /api/v1/webhooks/publication-status`
 - event append + ordered stream reads
-- request projection + publication projection
+- request, task, and publication projections
 - handoff accept / reject service path plus task completion
 - publication-state updates from signed webhook callback
 - bounded retry/watchdog table shape and command stubs
@@ -88,8 +88,6 @@ At the end of the first milestone, the team should be able to run this local seq
 7. `GET /api/v1/requests/{request_id}` shows the joined operator-facing state.
 
 If this path does not work end to end, do not move to UI, vectorization, or richer workflow automation.
-
-## Recommended Build Order
 
 ## Minimum Internal Command Set
 

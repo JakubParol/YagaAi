@@ -38,6 +38,9 @@ Validation:
 
 `task_ref` is present when the strategic owner immediately creates a task upon acceptance; `null` when task creation is deferred to a subsequent workflow step.
 
+Kickoff slice note:
+- In the kickoff milestone (`implementation/implementation-kickoff-v1.md`), task creation is mandatory on accepted ingress, so `task_ref` must be non-null for successful `POST /requests` responses.
+
 ### `GET /requests/{request_id}`
 Returns request read model.
 Tag: `core-slice`

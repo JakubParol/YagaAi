@@ -45,7 +45,8 @@ Capability tags:
   - Tag: `full-v1`
 
 - `PublicationService`
-  - `publish(reply: ReplyCommand) -> PublicationAttempted`
+  - `record_attempt(command: RecordPublicationAttemptCommand) -> PublicationAttemptRecorded`
+  - `record_result(command: RecordPublicationResultCommand) -> PublicationResultRecorded`
   - Tag: `core-slice`
 
 - `RuntimeQueryService`
@@ -73,7 +74,7 @@ Capability tags:
 
 These event consumers run as background loops inside the runtime daemon, not as separate default apps:
 
-- **Runtime Projection Worker** — materializes `request_projection` and `task_projection` from ordered event streams
+- **Runtime Projection Worker** — materializes `request_projection`, `task_projection`, and `publication_projection` from ordered event streams
 - **Planning Integration Projection Worker** — materializes planning-specific loop counters when an integration such as MC is enabled
 - **Agent Inbox / Assignee Inbox** — delivers dispatched handoffs to target agents; backed by `HandoffService.accept()`
 - **Requester Callback Handler** — processes task completion callbacks routed back to requester; backed by `TaskService.complete()`
