@@ -20,6 +20,7 @@ Table of contents for all documentation in this repository.
 | Document | Work Item | Description |
 |----------|-----------|-------------|
 | [2026-04-07-bootstrap-runtime-skeleton-design.md](specs/2026-04-07-bootstrap-runtime-skeleton-design.md) | YAGA-24 | Runtime skeleton bootstrap — monorepo layout, tooling, scripts |
+| [2026-04-07-shared-contracts-design.md](specs/2026-04-07-shared-contracts-design.md) | YAGA-26 | Shared contracts — HTTP, events, handoffs, webhooks, commands DTOs |
 
 Each area has its own index with detailed contents and reading order.
 Start with the area index before reading individual files.
