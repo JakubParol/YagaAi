@@ -1,0 +1,112 @@
+[tool.poetry]
+name = "yaga-ai"
+version = "0.1.0"
+description = "Multi-agent runtime for AI development teams"
+authors = ["YagaAi"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.4"
+pytest = ">=8.0"
+pytest-asyncio = ">=0.23"
+import-linter = ">=2.0"
+
+# Local packages (path dependencies)
+yaga-contracts = { path = "packages/contracts", develop = true }
+yaga-persistence = { path = "packages/persistence", develop = true }
+yaga-runtime-core = { path = "packages/runtime_core", develop = true }
+yaga-runtime = { path = "services/runtime", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# --- Tool Configuration ---
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = [
+    "packages/contracts",
+    "packages/persistence",
+    "packages/runtime_core",
+    "services/runtime",
+    "tests",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplify
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "yaga_contracts",
+    "yaga_persistence",
+    "yaga_runtime_core",
+    "yaga_runtime",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+strict_markers = true
+markers = [
+    "integration: marks tests that require external resources (DB, network)",
+]
+
+[tool.importlinter]
+root_packages = [
+    "yaga_contracts",
+    "yaga_persistence",
+    "yaga_runtime_core",
+    "yaga_runtime",
+]
+
+[[tool.importlinter.contracts]]
+name = "contracts is a leaf package"
+type = "forbidden"
+source_modules = ["yaga_contracts"]
+forbidden_modules = [
+    "yaga_persistence",
+    "yaga_runtime_core",
+    "yaga_runtime",
+]
+
+[[tool.importlinter.contracts]]
+name = "persistence depends only on contracts"
+type = "forbidden"
+source_modules = ["yaga_persistence"]
+forbidden_modules = [
+    "yaga_runtime_core",
+    "yaga_runtime",
+]
+
+[[tool.importlinter.contracts]]
+name = "runtime-core depends only on contracts"
+type = "forbidden"
+source_modules = ["yaga_runtime_core"]
+forbidden_modules = [
+    "yaga_persistence",
+    "yaga_runtime",
+]
+
+[[tool.importlinter.contracts]]
+name = "runtime cannot be imported by packages"
+type = "forbidden"
+source_modules = [
+    "yaga_contracts",
+    "yaga_persistence",
+    "yaga_runtime_core",
+]
+forbidden_modules = ["yaga_runtime"]
