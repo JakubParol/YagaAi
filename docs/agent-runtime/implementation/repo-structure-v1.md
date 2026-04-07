@@ -27,6 +27,7 @@
 - **Default runtime topology is single-process**: one local always-on runtime daemon (`services/runtime`).
 - API handlers, projection workers, and retry/watchdog loops run in-process as async tasks within the runtime daemon.
 - Separate processes for API vs workers are an optional scaling mode, not the default v1 requirement.
+- `apps/web` and `apps/cli` are source-layout/application-entrypoint boundaries, not additional always-on backend services.
 
 ## Boundaries
 - `runtime-core`: orchestration, handoffs, policies, watchdogs.

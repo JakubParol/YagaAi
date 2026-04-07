@@ -252,6 +252,11 @@ stable per-agent workers.
 The system should not assume serverless per-task cold starts for v1. Durable owners
 need stable coordination endpoints and predictable event consumption.
 
+Default v1 and kickoff deployment interpretation:
+- one host runtime process is the normative install shape,
+- agent-specific workers may run in-process or under runtime supervision,
+- but this flexibility must not be interpreted as a requirement for separate deployment units per agent.
+
 ---
 
 ### Decision 12 — Agent ↔ execution runtime interface

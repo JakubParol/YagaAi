@@ -195,6 +195,10 @@ The daemon supervises agent processes/workers and is responsible for:
 
 This is the operational heart of the system.
 
+Implementation clarification:
+- agent workers may be implemented in-process or as runtime-supervised subprocesses,
+- but the default product shape remains one runtime deployment unit, not a fleet of separately deployed agent services.
+
 ## 5.2 Local API and CLI surfaces (mandatory)
 
 The runtime should expose a **local API**.
