@@ -258,8 +258,10 @@ Definition of done:
 
 Implement:
 - create/update final publish intent
+- record publication attempt
+- record publication result
 - transition request/publication state
-- record delivery callback outcomes
+- reconcile delivery callback outcomes by `publish_dedup_key` and webhook `event_id`
 
 Definition of done:
 - request `reply_publish_status` mirrors the authoritative publication outcome
