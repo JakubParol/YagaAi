@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "yaga-persistence"
+version = "0.1.0"
+description = "SQL repositories, event store, and outbox"
+authors = ["YagaAi"]
+packages = [{ include = "yaga_persistence" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sqlalchemy = "^2.0"
+aiosqlite = ">=0.20"
+yaga-contracts = { path = "../contracts", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

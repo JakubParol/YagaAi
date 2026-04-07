@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "yaga-runtime-core"
+version = "0.1.0"
+description = "Orchestration, handoffs, policies, and watchdogs"
+authors = ["YagaAi"]
+packages = [{ include = "yaga_runtime_core" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+yaga-contracts = { path = "../contracts", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

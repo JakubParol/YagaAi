@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "yaga-runtime"
+version = "0.1.0"
+description = "Local runtime daemon — HTTP API, workers, projections"
+authors = ["YagaAi"]
+packages = [{ include = "yaga_runtime" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = ">=0.110"
+uvicorn = { version = ">=0.29", extras = ["standard"] }
+alembic = ">=1.13"
+structlog = ">=24.1"
+yaga-contracts = { path = "../../packages/contracts", develop = true }
+yaga-persistence = { path = "../../packages/persistence", develop = true }
+yaga-runtime-core = { path = "../../packages/runtime_core", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
