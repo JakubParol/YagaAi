@@ -61,6 +61,9 @@ known-first-party = [
 testpaths = ["tests"]
 asyncio_mode = "auto"
 strict_markers = true
+markers = [
+    "integration: marks tests that require external resources (DB, network)",
+]
 
 [tool.importlinter]
 root_packages = [
