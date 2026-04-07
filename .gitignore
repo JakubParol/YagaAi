@@ -3,6 +3,9 @@ docs/superpowers
 
 # Python
 __pycache__/
+.ruff_cache/
+.import_linter_cache/
+.pytest_cache/
 *.py[cod]
 *.egg-info/
 dist/
