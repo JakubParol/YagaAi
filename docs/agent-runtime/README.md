@@ -27,13 +27,14 @@ Read in order. Each document assumes the previous ones.
 
 When two documents appear inconsistent, use this resolution order:
 
-1. Core domain model (`02-core-model.md`) and canonical references (`reference/`)
-2. Contracts (`contracts/`) for API/A2A/event envelope semantics
-3. Data model (`data/sql-schema-v1.md`, `data/state-projections-v1.md`)
-4. Runtime shape and ops guidance (`14-hld-runtime-shape-and-installation.md`, runbooks)
-5. Implementation layout suggestions (`implementation/`)
+1. Agreed requirements baseline (`00a-agreed-requirements.md`) for product requirements, architectural constraints, and frozen non-negotiable rules
+2. Core domain model (`02-core-model.md`) and canonical references (`reference/`) for domain semantics and vocabulary, so long as they do not contradict `00a-agreed-requirements.md`
+3. Contracts (`contracts/`) for API/A2A/event envelope semantics
+4. Data model (`data/sql-schema-v1.md`, `data/state-projections-v1.md`)
+5. Runtime shape and ops guidance (`14-hld-runtime-shape-and-installation.md`, runbooks)
+6. Implementation layout suggestions (`implementation/`)
 
-Implementation docs must not redefine core semantics; they only map them to package/process shape.
+Implementation docs must not redefine core semantics or frozen requirements; they only map them to package/process shape.
 
 **Start here for the mental model:**
 1. [00-input-one-pager.md](00-input-one-pager.md) — vision and build principles

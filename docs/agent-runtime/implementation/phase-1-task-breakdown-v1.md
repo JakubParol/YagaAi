@@ -266,6 +266,20 @@ Implement:
 Definition of done:
 - request `reply_publish_status` mirrors the authoritative publication outcome
 
+### E5. `WatchdogService`
+
+Implement:
+- `arm(timer: WatchdogTimer)`
+- `cancel(timer_id: str)`
+- durable write-through to `jobs`
+- safe idempotent cancellation semantics
+
+Definition of done:
+- the named service exists in the kickoff slice
+- it is implemented as an internal runtime module, not a separate service/process/deployment unit
+- watchdog timers are represented as durable job records
+- callers do not manipulate `jobs` rows directly for watchdog control
+
 ## Block F — API Layer
 
 ### F1. `POST /api/v1/requests`
@@ -355,6 +369,7 @@ Cover:
 - immediate task + handoff creation
 - handoff accept/reject/complete transitions
 - publication result recording
+- watchdog arm/cancel behavior
 
 ### H4. End-to-end slice tests
 
@@ -391,4 +406,5 @@ Phase 1 can be called kickoff-complete when:
 - one end-to-end publication-failure path passes,
 - duplicate ingress is safe,
 - duplicate webhook replay is safe,
+- `WatchdogService` can arm and cancel durable timers inside the runtime process,
 - docs and code still match.

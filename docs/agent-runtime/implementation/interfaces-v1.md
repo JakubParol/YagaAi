@@ -27,6 +27,7 @@ Capability tags:
 - `WatchdogService`
   - `arm(timer: WatchdogTimer) -> WatchdogArmed`
   - `cancel(timer_id: str) -> WatchdogCancelled`
+  - Internal runtime module only; not a separate service/process/deployment unit
   - Tag: `core-slice`
 
 - `EventStoreService`

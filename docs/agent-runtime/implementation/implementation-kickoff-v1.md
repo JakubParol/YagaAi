@@ -19,6 +19,11 @@ This is intentionally narrower than full v1. It targets the minimum slice that p
 
 Use this as the implementation start point.
 
+Kickoff clarification:
+- the Web UI remains mandatory for full v1,
+- but it is explicitly out of scope for this kickoff milestone,
+- and kickoff completion is not blocked on shipping the UI.
+
 ## Frozen Kickoff Decisions
 
 The following decisions are fixed for the kickoff slice. Do not reopen them during the first implementation milestone.
@@ -33,8 +38,7 @@ The following decisions are fixed for the kickoff slice. Do not reopen them duri
 - publication model at kickoff: one final reply intent per request; progress updates are deferred
 - auth profile at kickoff: loopback-local runtime with bootstrap bearer auth for non-webhook endpoints; webhook HMAC remains mandatory
 - adapter model at kickoff: no real Discord/WhatsApp/web adapters yet; publication webhook simulates adapter callback delivery
-
-- handoff outcome values at kickoff: only `done`, `failed`, and `blocked` are expected in normal completion paths; `partial` and `escalated` are schema-valid but reserved for later workflow slices
+- task/callback completion outcome values at kickoff: only `done`, `failed`, and `blocked` are expected in normal completion paths; `partial` and `escalated` are schema-valid but reserved for later workflow slices
 
 These choices are intentionally narrow. They reduce ambiguity so the first code can start.
 
@@ -57,12 +61,15 @@ Included:
 
 Explicitly deferred from the first milestone:
 - full Mission Control workflow engine
-- UI
+- built-in Web UI delivery
 - CLI
 - memory retrieval and vectorization
 - real Discord / WhatsApp adapters
 - advanced diagnostics and operator dashboards
 - remote auth hardening beyond what is needed for local bring-up
+
+Deferred does not mean optional for full v1.
+The built-in Web UI remains a required v1 surface; it is simply not part of kickoff completion.
 
 ## Non-Negotiable Slice Boundaries
 
@@ -249,14 +256,17 @@ Intermediate publish intents are deferred until after the first milestone.
 
 ### Step 9 — Implement watchdog/job primitives
 
+`WatchdogService` is a required named core-slice component in kickoff.
+It is an internal runtime module, not a separate service/process/deployment unit.
 Do not build full recovery automation yet.
-Do build the primitives:
+Do build:
+- `WatchdogService` with `arm()` and `cancel()` backed by durable job rows
 - `jobs` table
 - watchdog/job record creation
 - cancellation field updates
 - one worker loop able to pick queued jobs
 
-The first milestone only needs enough machinery to prove retry/watchdog persistence shape is real.
+The first milestone only needs enough machinery to prove retry/watchdog persistence shape is real and callable through the named service interface.
 
 ### Step 10 — Add contract and slice tests before expansion
 
@@ -269,6 +279,7 @@ Before adding Mission Control or UI, add:
 - request projection tests
 - event ordering/dedup tests
 - reconciliation tests for ambiguous publication vs published callback
+- watchdog arm/cancel persistence tests
 
 ## Minimal Internal Components
 
@@ -279,6 +290,7 @@ The first slice should implement only these services:
 - `TaskService`
 - `EventStoreService`
 - `PublicationService`
+- `WatchdogService`
 - `PolicyEnforcer` stub
 - one projection worker loop
 - one job worker loop
@@ -318,7 +330,8 @@ The first milestone is complete only when all of the following are true:
 4. The request read model can show request lifecycle and publication state cleanly.
 5. Duplicate ingress and duplicate publication callbacks are safe.
 6. The event log is append-only and queryable by aggregate and correlation.
-7. There is at least one worker loop proving projection/job execution against durable tables.
+7. `WatchdogService` can arm and cancel durable timers without introducing a separate runtime process.
+8. There is at least one worker loop proving projection/job execution against durable tables.
 
 ## What To Build Next After This Slice
 
