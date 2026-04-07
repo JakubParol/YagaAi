@@ -8,11 +8,16 @@ from sqlalchemy import MetaData, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from yaga_runtime.config import RuntimeSettings
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override alembic.ini URL with the config model's database_url.
+runtime_settings = RuntimeSettings()
+config.set_main_option("sqlalchemy.url", runtime_settings.database_url)
 
 # Shared metadata — ORM models register on this as they are added.
 # Empty for now; the first real migration will populate it.

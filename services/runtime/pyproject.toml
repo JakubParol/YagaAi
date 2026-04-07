@@ -10,6 +10,7 @@ python = "^3.12"
 fastapi = ">=0.110"
 uvicorn = { version = ">=0.29", extras = ["standard"] }
 alembic = ">=1.13"
+pydantic-settings = ">=2.0"
 structlog = ">=24.1"
 yaga-contracts = { path = "../../packages/contracts", develop = true }
 yaga-persistence = { path = "../../packages/persistence", develop = true }
