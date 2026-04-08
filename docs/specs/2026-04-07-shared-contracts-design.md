@@ -17,7 +17,7 @@ internal commands live here.
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Module layout | Flat files under `yaga_contracts/` | Small scope (~15 models), 300-line file limit, no need for subdirectories yet |
-| Inheritance strategy | Hybrid — bases for commands and events only | Commands share a genuine envelope (8 fields); events share a genuine envelope (12 fields). HTTP and webhook DTOs are flat. |
+| Inheritance strategy | Hybrid — bases for commands and events only | Commands share a genuine envelope (10 fields); events share a genuine envelope (12 fields). HTTP and webhook DTOs are flat. |
 | ID types | `str` everywhere | SQL schema uses TEXT for all IDs. Architecture docs use string identifiers (`"james"`, `"hof_01"`, `"req_01"`). Contracts stay permissive — validation tightening happens at the service layer. |
 | Event payloads | `dict[str, Any]` on envelope, typed payload models for deserialization | Avoids a 30+ type discriminated union that couples unrelated event domains. Consumers pick the payload model by `event_type`. |
 | Pydantic config | `model_config = ConfigDict(frozen=True)` on all models | Contracts are immutable data containers. |
@@ -75,7 +75,7 @@ identifiers (e.g., `"james"`, `"naomi"`).
 |-------|------|-------|
 | `origin` | `str` | Channel identifier: `"whatsapp"`, `"discord"`, `"web"`, `"cli"` |
 | `payload` | `RequestPayload` | Nested object (see below) |
-| `reply_target` | `ReplyTarget \| None` | Where to publish the human-visible reply |
+| `reply_target` | `ReplyTarget` | Where to publish the human-visible reply. Required: `requests.reply_target_*` columns are NOT NULL in `sql-schema-v1.md`, and the kickoff slice treats all inputs as durable requests that must have a reply destination. The HTTP example in `http-api-v1.md` always includes it. |
 
 **`RequestPayload`** — nested payload within CreateRequestBody:
 
@@ -153,7 +153,7 @@ Source: `contracts/http-api-v1.md` error body:
 | `actor` | `Actor` | |
 | `occurred_at` | `datetime` | |
 | `schema_version` | `str` | Default `"v1"` per event-bus-v1.md example (TEXT in SQL schema) |
-| `stream_sequence` | `int \| None` | Assigned by event store on append, not by producer. BIGINT in SQL. |
+| `stream_sequence` | `int` | Required per event-bus-v1.md. BIGINT in SQL. Assigned by the event store at persist time — producers must NOT set this field; the event store assigns the next monotonic value for the aggregate stream. In the Pydantic model, this field has no default and must be set before serialization (i.e., the event store constructs the final envelope). |
 | `payload` | `dict[str, Any]` | Typed payload deserialized by consumers based on `event_type` |
 
 Source: `reference/canonical-events.md` envelope fields +
