@@ -17,7 +17,7 @@ internal commands live here.
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Module layout | Flat files under `yaga_contracts/` | Small scope (~15 models), 300-line file limit, no need for subdirectories yet |
-| Inheritance strategy | Hybrid — bases for commands and events only | Commands share a genuine envelope (7 fields); events share a genuine envelope (12 fields). HTTP and webhook DTOs are flat. |
+| Inheritance strategy | Hybrid — bases for commands and events only | Commands share a genuine envelope (8 fields); events share a genuine envelope (12 fields). HTTP and webhook DTOs are flat. |
 | ID types | `str` everywhere | SQL schema uses TEXT for all IDs. Architecture docs use string identifiers (`"james"`, `"hof_01"`, `"req_01"`). Contracts stay permissive — validation tightening happens at the service layer. |
 | Event payloads | `dict[str, Any]` on envelope, typed payload models for deserialization | Avoids a 30+ type discriminated union that couples unrelated event domains. Consumers pick the payload model by `event_type`. |
 | Pydantic config | `model_config = ConfigDict(frozen=True)` on all models | Contracts are immutable data containers. |
@@ -94,9 +94,9 @@ callers — the runtime assigns them.
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `status` | `str` | Always `"accepted"` |
+| `status` | `Literal["accepted"]` | Always `"accepted"` |
 | `request_id` | `str` | Runtime-assigned request identifier |
-| `task_ref` | `str \| None` | Task created for this request (None if normalization rejected) |
+| `task_ref` | `str \| None` | Task created for this request; `None` when task creation is deferred to a subsequent workflow step. In the kickoff slice, task creation is immediate on accepted ingress, so `task_ref` is always non-null for successful responses. |
 
 Source: `contracts/http-api-v1.md` response: `{"status":"accepted","request_id":"req_01","task_ref":"task_01"}`
 
@@ -109,25 +109,33 @@ Source: `contracts/http-api-v1.md` response: `{"status":"accepted","request_id":
 | `status` | `RequestStatus` | Operator-facing projection label |
 | `reply_publish_status` | `PublishStatus` | Publication state |
 | `origin` | `str` | Channel identifier |
-| `origin_session_key` | `str \| None` | Channel-specific session key |
-| `request_class` | `RequestClass` | `SESSION_BOUND` or `DURABLE` |
 | `strategic_owner_agent_id` | `str \| None` | e.g., `"james"` |
-| `current_owner_agent_id` | `str \| None` | Current execution owner |
 | `reply_target` | `ReplyTarget \| None` | Current reply destination |
-| `publish_dedup_key` | `str \| None` | Publication intent identity |
 | `created_at` | `datetime` | |
 | `updated_at` | `datetime` | |
 
-Source: `contracts/http-api-v1.md` GET response + `data/state-projections-v1.md`
-request_projection fields. The read model exposes the full projection.
+Source: `contracts/http-api-v1.md` GET /requests/{request_id} response example.
+Fields match the HTTP contract exactly. Additional projection fields
+(`origin_session_key`, `request_class`, `current_owner_agent_id`,
+`reply_target_version`, `last_stream_sequence`) are internal to the
+`request_projection` table and are NOT exposed through the HTTP read model.
 
-**`ErrorResponse`** — error envelope:
+**`ErrorDetail`** — inner error object:
 
-| Field | Type |
-|-------|------|
-| `error_code` | `str` |
-| `message` | `str` |
-| `request_id` | `str \| None` |
+| Field | Type | Notes |
+|-------|------|-------|
+| `code` | `str` | Machine-readable error code (e.g., `"VALIDATION_ERROR"`, `"CONFLICT"`) |
+| `message` | `str` | Human-readable description |
+| `details` | `list[Any]` | Additional structured detail; empty list when not applicable |
+
+**`ErrorResponse`** — error envelope (nested wrapper):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `error` | `ErrorDetail` | Nested error object |
+
+Source: `contracts/http-api-v1.md` error body:
+`{"error":{"code":"VALIDATION_ERROR","message":"origin is required","details":[]}}`
 
 ### events.py — Event Envelope and Payloads
 
@@ -144,7 +152,7 @@ request_projection fields. The read model exposes the full projection.
 | `causation_id` | `str \| None` | `None` on root events |
 | `actor` | `Actor` | |
 | `occurred_at` | `datetime` | |
-| `schema_version` | `str` | Default `"1"` (TEXT in SQL schema) |
+| `schema_version` | `str` | Default `"v1"` per event-bus-v1.md example (TEXT in SQL schema) |
 | `stream_sequence` | `int \| None` | Assigned by event store on append, not by producer. BIGINT in SQL. |
 | `payload` | `dict[str, Any]` | Typed payload deserialized by consumers based on `event_type` |
 
@@ -253,6 +261,7 @@ Source: `contracts/internal-a2a-v1.md` reject response:
 | `channel` | `str` | |
 | `session_key` | `str` | |
 | `published_at` | `datetime \| None` | Present when status is `PUBLISHED` |
+| `failure_reason` | `str \| None` | Present when status is `FAILED`; propagated to `RecordPublicationResultCommand` |
 
 Source: `contracts/webhook-callback-v1.md` payload example:
 `{"event_id":"evt_100","request_id":"req_01","publication_id":"pub_01",...}`
@@ -289,13 +298,18 @@ HMAC verification logic belongs in the API layer (Block F), not in contracts.
 |-------|------|-------|
 | `command_id` | `str` | |
 | `command_type` | `str` | Discriminator, set per subclass |
+| `aggregate_type` | `str` | e.g., `"request"`, `"task"`, `"handoff"` |
+| `aggregate_id` | `str` | Target aggregate identifier |
 | `correlation_id` | `str` | |
 | `causation_id` | `str \| None` | |
 | `dedup_key` | `str` | |
-| `issued_at` | `datetime` | |
+| `occurred_at` | `datetime` | |
 | `actor` | `Actor` | |
+| `schema_version` | `str` | Default `"v1"` |
 
-Source: `data/sql-schema-v1.md` command_log table fields.
+Source: `data/sql-schema-v1.md` command_log table — all fields mapped 1:1.
+Note: `actor` serializes to `actor_json` TEXT in SQL; `payload_json` is derived
+from the command's additional fields at the persistence layer.
 
 **Concrete commands (v1 minimum set from implementation-kickoff-v1.md):**
 
