@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -60,7 +60,7 @@ class TestPublicationStatusWebhook:
     def test_frozen(self) -> None:
         wh = self._make()
         with pytest.raises(ValidationError):
-            wh.status = PublishStatus.FAILED  # type: ignore[misc]
+            cast(Any, wh).status = PublishStatus.FAILED
 
     def test_json_wire_format(self) -> None:
         wh = self._make(

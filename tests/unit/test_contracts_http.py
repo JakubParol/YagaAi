@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -29,12 +29,12 @@ class TestRequestPayload:
 
     def test_text_required(self) -> None:
         with pytest.raises(ValidationError):
-            RequestPayload()  # type: ignore[call-arg]
+            RequestPayload.model_validate({})
 
     def test_frozen(self) -> None:
         p = RequestPayload(text="hello")
         with pytest.raises(ValidationError):
-            p.text = "bye"  # type: ignore[misc]
+            cast(Any, p).text = "bye"
 
 
 # ── CreateRequestBody ────────────────────────────────────────────────
@@ -56,10 +56,12 @@ class TestCreateRequestBody:
 
     def test_reply_target_required(self) -> None:
         with pytest.raises(ValidationError):
-            CreateRequestBody(
-                origin="slack-adapter",
-                payload=RequestPayload(text="hi"),
-            )  # type: ignore[call-arg]
+            CreateRequestBody.model_validate(
+                {
+                    "origin": "slack-adapter",
+                    "payload": {"text": "hi"},
+                }
+            )
 
     def test_frozen(self) -> None:
         body = CreateRequestBody(
@@ -68,7 +70,7 @@ class TestCreateRequestBody:
             reply_target=self._reply_target(),
         )
         with pytest.raises(ValidationError):
-            body.origin = "other"  # type: ignore[misc]
+            cast(Any, body).origin = "other"
 
 
 # ── CreateRequestResponse ────────────────────────────────────────────
@@ -87,10 +89,12 @@ class TestCreateRequestResponse:
 
     def test_literal_rejects_other_values(self) -> None:
         with pytest.raises(ValidationError):
-            CreateRequestResponse(
-                status="rejected",  # type: ignore[arg-type]
-                request_id="req-1",
-                task_ref=None,
+            CreateRequestResponse.model_validate(
+                {
+                    "status": "rejected",
+                    "request_id": "req-1",
+                    "task_ref": None,
+                }
             )
 
     def test_task_ref_nullable(self) -> None:
@@ -106,7 +110,7 @@ class TestCreateRequestResponse:
             status="accepted", request_id="req-1", task_ref=None
         )
         with pytest.raises(ValidationError):
-            resp.status = "accepted"  # type: ignore[misc]
+            cast(Any, resp).status = "accepted"
 
 
 # ── RequestReadModel ─────────────────────────────────────────────────
@@ -147,7 +151,7 @@ class TestRequestReadModel:
     def test_frozen(self) -> None:
         m = self._make()
         with pytest.raises(ValidationError):
-            m.status = RequestStatus.CLOSED  # type: ignore[misc]
+            cast(Any, m).status = RequestStatus.CLOSED
 
 
 # ── ErrorDetail / ErrorResponse ──────────────────────────────────────
@@ -167,7 +171,7 @@ class TestErrorDetail:
     def test_frozen(self) -> None:
         d = ErrorDetail(code="X", message="Y")
         with pytest.raises(ValidationError):
-            d.code = "Z"  # type: ignore[misc]
+            cast(Any, d).code = "Z"
 
 
 class TestErrorResponse:
@@ -197,4 +201,4 @@ class TestErrorResponse:
     def test_frozen(self) -> None:
         resp = ErrorResponse(error=ErrorDetail(code="X", message="Y"))
         with pytest.raises(ValidationError):
-            resp.error = ErrorDetail(code="A", message="B")  # type: ignore[misc]
+            cast(Any, resp).error = ErrorDetail(code="A", message="B")

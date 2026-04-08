@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -85,7 +85,7 @@ class TestEventEnvelope:
     def test_frozen(self) -> None:
         env = EventEnvelope(**_envelope_kwargs())
         with pytest.raises(ValidationError):
-            env.event_id = "changed"  # type: ignore[misc]
+            cast(Any, env).event_id = "changed"
 
     def test_json_round_trip(self) -> None:
         env = EventEnvelope(**_envelope_kwargs(causation_id="cause-1"))
@@ -136,7 +136,7 @@ class TestRequestReceivedPayload:
             request_class=RequestClass.SESSION_BOUND,
         )
         with pytest.raises(ValidationError):
-            p.request_id = "changed"  # type: ignore[misc]
+            cast(Any, p).request_id = "changed"
 
 
 class TestRequestNormalizationPayload:

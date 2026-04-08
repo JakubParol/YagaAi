@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -177,7 +177,7 @@ class TestActor:
     def test_frozen(self) -> None:
         actor = Actor(type="runtime", id="rt-1")
         with pytest.raises(ValidationError):
-            actor.type = "adapter"  # type: ignore[misc]
+            cast(Any, actor).type = "adapter"
 
     def test_json_round_trip(self) -> None:
         actor = Actor(type="adapter", id="slack-1")
@@ -201,7 +201,7 @@ class TestReplyTarget:
     def test_frozen(self) -> None:
         rt = ReplyTarget(channel="slack", session_key="sess-1")
         with pytest.raises(ValidationError):
-            rt.channel = "discord"  # type: ignore[misc]
+            cast(Any, rt).channel = "discord"
 
     def test_json_round_trip(self) -> None:
         rt = ReplyTarget(

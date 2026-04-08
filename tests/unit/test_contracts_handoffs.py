@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -64,7 +64,7 @@ class TestHandoffDispatch:
     def test_frozen(self) -> None:
         d = HandoffDispatch(**self._defaults())
         with pytest.raises(ValidationError):
-            d.handoff_id = "ho-2"  # type: ignore[misc]
+            cast(Any, d).handoff_id = "ho-2"
 
 
 # ── HandoffAck ──────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ class TestHandoffAck:
             received_at=datetime.now(tz=UTC),
         )
         with pytest.raises(ValidationError):
-            ack.handoff_id = "ho-2"  # type: ignore[misc]
+            cast(Any, ack).handoff_id = "ho-2"
 
 
 # ── HandoffAcceptance ───────────────────────────────────────────────
@@ -117,7 +117,7 @@ class TestHandoffAcceptance:
             accepted_at=datetime.now(tz=UTC),
         )
         with pytest.raises(ValidationError):
-            acc.owner = "amos"  # type: ignore[misc]
+            cast(Any, acc).owner = "amos"
 
 
 # ── HandoffRejection ───────────────────────────────────────────────
@@ -148,4 +148,4 @@ class TestHandoffRejection:
             rejected_at=datetime.now(tz=UTC),
         )
         with pytest.raises(ValidationError):
-            rej.reason = "Changed mind"  # type: ignore[misc]
+            cast(Any, rej).reason = "Changed mind"

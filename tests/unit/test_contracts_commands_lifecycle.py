@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -227,4 +227,4 @@ class TestCommandFrozen:
     def test_command_base_frozen(self) -> None:
         cmd = CommandBase(**_base_kwargs())
         with pytest.raises(ValidationError):
-            cmd.command_id = "changed"  # type: ignore[misc]
+            cast(Any, cmd).command_id = "changed"
