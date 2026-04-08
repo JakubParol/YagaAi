@@ -30,8 +30,6 @@ from yaga_contracts.shared import (
     TaskStatus,
 )
 
-# ── Helpers ──────────────────────────────────────────────────────────
-
 _NOW = datetime(2026, 4, 7, 12, 0, 0, tzinfo=UTC)
 _ACTOR = Actor(type="agent", id="james-001")
 
@@ -52,9 +50,6 @@ def _envelope_kwargs(**overrides: Any) -> dict[str, Any]:
     }
     base.update(overrides)
     return base
-
-
-# ── EventEnvelope ────────────────────────────────────────────────────
 
 
 class TestEventEnvelope:
@@ -89,7 +84,7 @@ class TestEventEnvelope:
 
     def test_frozen(self) -> None:
         env = EventEnvelope(**_envelope_kwargs())
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             env.event_id = "changed"  # type: ignore[misc]
 
     def test_json_round_trip(self) -> None:
@@ -103,9 +98,6 @@ class TestEventEnvelope:
         data = env.model_dump()
         restored = EventEnvelope.model_validate(data)
         assert restored == env
-
-
-# ── RequestReceivedPayload ───────────────────────────────────────────
 
 
 class TestRequestReceivedPayload:
@@ -143,11 +135,8 @@ class TestRequestReceivedPayload:
             idempotency_key="idem-1",
             request_class=RequestClass.SESSION_BOUND,
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             p.request_id = "changed"  # type: ignore[misc]
-
-
-# ── RequestNormalizationPayload ──────────────────────────────────────
 
 
 class TestRequestNormalizationPayload:
@@ -160,9 +149,6 @@ class TestRequestNormalizationPayload:
         assert p.request_id == "req-1"
         assert p.strategic_owner_agent_id == "james-001"
         assert p.default_assignee_agent_id == "naomi-001"
-
-
-# ── TaskLifecyclePayload ────────────────────────────────────────────
 
 
 class TestTaskLifecyclePayload:
@@ -190,9 +176,6 @@ class TestTaskLifecyclePayload:
         assert p.request_id is None
 
 
-# ── HandoffLifecyclePayload ─────────────────────────────────────────
-
-
 class TestHandoffLifecyclePayload:
     def test_creation(self) -> None:
         p = HandoffLifecyclePayload(
@@ -215,9 +198,6 @@ class TestHandoffLifecyclePayload:
             reason="Not my area",
         )
         assert p.reason == "Not my area"
-
-
-# ── CallbackPayload ─────────────────────────────────────────────────
 
 
 class TestCallbackPayload:
@@ -248,9 +228,6 @@ class TestCallbackPayload:
         assert p.result_summary == "Something went wrong"
 
 
-# ── PublicationPayload ───────────────────────────────────────────────
-
-
 class TestPublicationPayload:
     def test_creation(self) -> None:
         p = PublicationPayload(
@@ -274,9 +251,6 @@ class TestPublicationPayload:
         assert p.session_key == "sess-1"
 
 
-# ── WatchdogPayload ─────────────────────────────────────────────────
-
-
 class TestWatchdogPayload:
     def test_creation(self) -> None:
         p = WatchdogPayload(
@@ -289,9 +263,6 @@ class TestWatchdogPayload:
         assert p.job_type == "timeout_check"
         assert p.subject_type == "task"
         assert p.subject_id == "task-1"
-
-
-# ── CommandRejectedPayload ──────────────────────────────────────────
 
 
 class TestCommandRejectedPayload:

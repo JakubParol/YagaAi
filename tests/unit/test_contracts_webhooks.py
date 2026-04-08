@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from yaga_contracts.shared import PublishStatus
 from yaga_contracts.webhooks import (
@@ -58,7 +59,7 @@ class TestPublicationStatusWebhook:
 
     def test_frozen(self) -> None:
         wh = self._make()
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             wh.status = PublishStatus.FAILED  # type: ignore[misc]
 
     def test_json_wire_format(self) -> None:

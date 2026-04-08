@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from yaga_contracts.http import (
     CreateRequestBody,
@@ -27,12 +28,12 @@ class TestRequestPayload:
         assert p.text == "hello"
 
     def test_text_required(self) -> None:
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             RequestPayload()  # type: ignore[call-arg]
 
     def test_frozen(self) -> None:
         p = RequestPayload(text="hello")
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             p.text = "bye"  # type: ignore[misc]
 
 
@@ -54,7 +55,7 @@ class TestCreateRequestBody:
         assert body.reply_target.channel == "slack"
 
     def test_reply_target_required(self) -> None:
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             CreateRequestBody(
                 origin="slack-adapter",
                 payload=RequestPayload(text="hi"),
@@ -66,7 +67,7 @@ class TestCreateRequestBody:
             payload=RequestPayload(text="hi"),
             reply_target=self._reply_target(),
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             body.origin = "other"  # type: ignore[misc]
 
 
@@ -85,7 +86,7 @@ class TestCreateRequestResponse:
         assert resp.task_ref == "task-1"
 
     def test_literal_rejects_other_values(self) -> None:
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             CreateRequestResponse(
                 status="rejected",  # type: ignore[arg-type]
                 request_id="req-1",
@@ -104,7 +105,7 @@ class TestCreateRequestResponse:
         resp = CreateRequestResponse(
             status="accepted", request_id="req-1", task_ref=None
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             resp.status = "accepted"  # type: ignore[misc]
 
 
@@ -145,7 +146,7 @@ class TestRequestReadModel:
 
     def test_frozen(self) -> None:
         m = self._make()
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             m.status = RequestStatus.CLOSED  # type: ignore[misc]
 
 
@@ -165,7 +166,7 @@ class TestErrorDetail:
 
     def test_frozen(self) -> None:
         d = ErrorDetail(code="X", message="Y")
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             d.code = "Z"  # type: ignore[misc]
 
 
@@ -195,5 +196,5 @@ class TestErrorResponse:
 
     def test_frozen(self) -> None:
         resp = ErrorResponse(error=ErrorDetail(code="X", message="Y"))
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             resp.error = ErrorDetail(code="A", message="B")  # type: ignore[misc]

@@ -63,7 +63,7 @@ class TestHandoffDispatch:
 
     def test_frozen(self) -> None:
         d = HandoffDispatch(**self._defaults())
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             d.handoff_id = "ho-2"  # type: ignore[misc]
 
 
@@ -88,7 +88,7 @@ class TestHandoffAck:
             status=HandoffStatus.RECEIVED,
             received_at=datetime.now(tz=UTC),
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             ack.handoff_id = "ho-2"  # type: ignore[misc]
 
 
@@ -116,7 +116,7 @@ class TestHandoffAcceptance:
             owner="naomi",
             accepted_at=datetime.now(tz=UTC),
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             acc.owner = "amos"  # type: ignore[misc]
 
 
@@ -147,5 +147,5 @@ class TestHandoffRejection:
             reason="Out of scope",
             rejected_at=datetime.now(tz=UTC),
         )
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(ValidationError):
             rej.reason = "Changed mind"  # type: ignore[misc]
