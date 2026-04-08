@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from yaga_contracts.shared import PublishStatus
 
@@ -32,3 +32,13 @@ class PublicationStatusWebhook(BaseModel):
     session_key: str
     published_at: datetime | None = None
     failure_reason: str | None = None
+
+    @model_validator(mode="after")
+    def _check_status_dependent_fields(self) -> PublicationStatusWebhook:
+        if self.status == "published" and self.published_at is None:
+            msg = "published_at is required when status is 'published'"
+            raise ValueError(msg)
+        if self.status == "failed" and self.failure_reason is None:
+            msg = "failure_reason is required when status is 'failed'"
+            raise ValueError(msg)
+        return self

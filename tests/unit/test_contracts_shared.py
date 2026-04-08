@@ -29,140 +29,140 @@ from yaga_contracts.shared import (
 
 class TestTaskStatus:
     expected = [
-        "CREATED",
-        "ACCEPTED",
-        "IN_PROGRESS",
-        "REVIEW",
-        "VERIFY",
-        "DONE",
-        "BLOCKED",
-        "ESCALATED",
-        "CANCELLED",
+        "Created",
+        "Accepted",
+        "In Progress",
+        "Review",
+        "Verify",
+        "Done",
+        "Blocked",
+        "Escalated",
+        "Cancelled",
     ]
 
     def test_members(self) -> None:
         assert [m.value for m in TaskStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert TaskStatus.CREATED == "CREATED"
+        assert TaskStatus.CREATED == "Created"
 
 
 class TestHandoffStatus:
-    expected = ["RECEIVED", "ACCEPTED", "REJECTED"]
+    expected = ["received", "accepted", "rejected"]
 
     def test_members(self) -> None:
         assert [m.value for m in HandoffStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert HandoffStatus.RECEIVED == "RECEIVED"
+        assert HandoffStatus.RECEIVED == "received"
 
 
 class TestRequestStatus:
     expected = [
-        "RECEIVED",
-        "NORMALIZED",
-        "DELEGATED",
-        "AWAITING_CALLBACK",
-        "REPLY_PENDING",
-        "REPLY_PUBLISHED",
-        "REPLY_FAILED",
-        "FALLBACK_REQUIRED",
-        "CLOSED",
+        "received",
+        "normalized",
+        "delegated",
+        "awaiting_callback",
+        "reply_pending",
+        "reply_published",
+        "reply_failed",
+        "fallback_required",
+        "closed",
     ]
 
     def test_members(self) -> None:
         assert [m.value for m in RequestStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert RequestStatus.CLOSED == "CLOSED"
+        assert RequestStatus.CLOSED == "closed"
 
 
 class TestPublishStatus:
     expected = [
-        "PENDING",
-        "ATTEMPTED",
-        "PUBLISHED",
-        "FAILED",
-        "UNKNOWN",
-        "FALLBACK_REQUIRED",
-        "ABANDONED",
+        "pending",
+        "attempted",
+        "published",
+        "failed",
+        "unknown",
+        "fallback_required",
+        "abandoned",
     ]
 
     def test_members(self) -> None:
         assert [m.value for m in PublishStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert PublishStatus.PENDING == "PENDING"
+        assert PublishStatus.PENDING == "pending"
 
 
 class TestRequestClass:
-    expected = ["SESSION_BOUND", "DURABLE"]
+    expected = ["session_bound", "durable"]
 
     def test_members(self) -> None:
         assert [m.value for m in RequestClass] == self.expected
 
     def test_str_identity(self) -> None:
-        assert RequestClass.DURABLE == "DURABLE"
+        assert RequestClass.DURABLE == "durable"
 
 
 class TestExecutionMode:
-    expected = ["SESSION_BOUND", "DETACHED"]
+    expected = ["session_bound", "detached"]
 
     def test_members(self) -> None:
         assert [m.value for m in ExecutionMode] == self.expected
 
     def test_str_identity(self) -> None:
-        assert ExecutionMode.DETACHED == "DETACHED"
+        assert ExecutionMode.DETACHED == "detached"
 
 
 class TestHandoffResolution:
-    expected = ["ACCEPTED", "REJECTED"]
+    expected = ["accepted", "rejected"]
 
     def test_members(self) -> None:
         assert [m.value for m in HandoffResolution] == self.expected
 
     def test_str_identity(self) -> None:
-        assert HandoffResolution.ACCEPTED == "ACCEPTED"
+        assert HandoffResolution.ACCEPTED == "accepted"
 
 
 class TestTaskOutcome:
-    expected = ["DONE", "FAILED", "BLOCKED"]
+    expected = ["done", "failed", "blocked"]
 
     def test_members(self) -> None:
         assert [m.value for m in TaskOutcome] == self.expected
 
     def test_str_identity(self) -> None:
-        assert TaskOutcome.DONE == "DONE"
+        assert TaskOutcome.DONE == "done"
 
 
 class TestJobStatus:
-    expected = ["SCHEDULED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"]
+    expected = ["scheduled", "running", "completed", "failed", "cancelled"]
 
     def test_members(self) -> None:
         assert [m.value for m in JobStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert JobStatus.SCHEDULED == "SCHEDULED"
+        assert JobStatus.SCHEDULED == "scheduled"
 
 
 class TestCommandStatus:
-    expected = ["ACCEPTED", "REJECTED", "PROCESSED"]
+    expected = ["accepted", "rejected", "processed"]
 
     def test_members(self) -> None:
         assert [m.value for m in CommandStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert CommandStatus.PROCESSED == "PROCESSED"
+        assert CommandStatus.PROCESSED == "processed"
 
 
 class TestOutboxStatus:
-    expected = ["PENDING", "DISPATCHED", "FAILED"]
+    expected = ["pending", "dispatched", "failed"]
 
     def test_members(self) -> None:
         assert [m.value for m in OutboxStatus] == self.expected
 
     def test_str_identity(self) -> None:
-        assert OutboxStatus.DISPATCHED == "DISPATCHED"
+        assert OutboxStatus.DISPATCHED == "dispatched"
 
 
 # ── Value object tests ────────────────────────────────────────────────

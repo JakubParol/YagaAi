@@ -14,7 +14,6 @@ from yaga_contracts.handoffs import (
     HandoffDispatch,
     HandoffRejection,
 )
-from yaga_contracts.shared import HandoffStatus
 
 # ── HandoffDispatch ─────────────────────────────────────────────────
 
@@ -75,17 +74,25 @@ class TestHandoffAck:
         now = datetime.now(tz=UTC)
         ack = HandoffAck(
             handoff_id="ho-1",
-            status=HandoffStatus.RECEIVED,
             received_at=now,
         )
         assert ack.handoff_id == "ho-1"
-        assert ack.status == HandoffStatus.RECEIVED
+        assert ack.status == "received"
         assert ack.received_at == now
+
+    def test_default_status(self) -> None:
+        now = datetime.now(tz=UTC)
+        ack = HandoffAck(handoff_id="ho-1", received_at=now)
+        assert ack.status == "received"
+
+    def test_wrong_status_rejected(self) -> None:
+        now = datetime.now(tz=UTC)
+        with pytest.raises(ValidationError):
+            HandoffAck(handoff_id="ho-1", status="accepted", received_at=now)
 
     def test_frozen(self) -> None:
         ack = HandoffAck(
             handoff_id="ho-1",
-            status=HandoffStatus.RECEIVED,
             received_at=datetime.now(tz=UTC),
         )
         with pytest.raises(ValidationError):
@@ -100,19 +107,32 @@ class TestHandoffAcceptance:
         now = datetime.now(tz=UTC)
         acc = HandoffAcceptance(
             handoff_id="ho-1",
-            status=HandoffStatus.ACCEPTED,
             owner="naomi",
             accepted_at=now,
         )
         assert acc.handoff_id == "ho-1"
-        assert acc.status == HandoffStatus.ACCEPTED
+        assert acc.status == "accepted"
         assert acc.owner == "naomi"
         assert acc.accepted_at == now
+
+    def test_default_status(self) -> None:
+        now = datetime.now(tz=UTC)
+        acc = HandoffAcceptance(handoff_id="ho-1", owner="naomi", accepted_at=now)
+        assert acc.status == "accepted"
+
+    def test_wrong_status_rejected(self) -> None:
+        now = datetime.now(tz=UTC)
+        with pytest.raises(ValidationError):
+            HandoffAcceptance(
+                handoff_id="ho-1",
+                status="received",
+                owner="naomi",
+                accepted_at=now,
+            )
 
     def test_frozen(self) -> None:
         acc = HandoffAcceptance(
             handoff_id="ho-1",
-            status=HandoffStatus.ACCEPTED,
             owner="naomi",
             accepted_at=datetime.now(tz=UTC),
         )
@@ -128,21 +148,40 @@ class TestHandoffRejection:
         now = datetime.now(tz=UTC)
         rej = HandoffRejection(
             handoff_id="ho-1",
-            status=HandoffStatus.REJECTED,
             assignee="naomi",
             reason="Out of scope",
             rejected_at=now,
         )
         assert rej.handoff_id == "ho-1"
-        assert rej.status == HandoffStatus.REJECTED
+        assert rej.status == "rejected"
         assert rej.assignee == "naomi"
         assert rej.reason == "Out of scope"
         assert rej.rejected_at == now
 
+    def test_default_status(self) -> None:
+        now = datetime.now(tz=UTC)
+        rej = HandoffRejection(
+            handoff_id="ho-1",
+            assignee="naomi",
+            reason="Out of scope",
+            rejected_at=now,
+        )
+        assert rej.status == "rejected"
+
+    def test_wrong_status_rejected(self) -> None:
+        now = datetime.now(tz=UTC)
+        with pytest.raises(ValidationError):
+            HandoffRejection(
+                handoff_id="ho-1",
+                status="accepted",
+                assignee="naomi",
+                reason="Out of scope",
+                rejected_at=now,
+            )
+
     def test_frozen(self) -> None:
         rej = HandoffRejection(
             handoff_id="ho-1",
-            status=HandoffStatus.REJECTED,
             assignee="naomi",
             reason="Out of scope",
             rejected_at=datetime.now(tz=UTC),

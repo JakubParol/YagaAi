@@ -11,84 +11,84 @@ from pydantic import BaseModel, ConfigDict
 
 
 class TaskStatus(StrEnum):
-    CREATED = "CREATED"
-    ACCEPTED = "ACCEPTED"
-    IN_PROGRESS = "IN_PROGRESS"
-    REVIEW = "REVIEW"
-    VERIFY = "VERIFY"
-    DONE = "DONE"
-    BLOCKED = "BLOCKED"
-    ESCALATED = "ESCALATED"
-    CANCELLED = "CANCELLED"
+    CREATED = "Created"
+    ACCEPTED = "Accepted"
+    IN_PROGRESS = "In Progress"
+    REVIEW = "Review"
+    VERIFY = "Verify"
+    DONE = "Done"
+    BLOCKED = "Blocked"
+    ESCALATED = "Escalated"
+    CANCELLED = "Cancelled"
 
 
 class HandoffStatus(StrEnum):
-    RECEIVED = "RECEIVED"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
+    RECEIVED = "received"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
 
 
 class RequestStatus(StrEnum):
-    RECEIVED = "RECEIVED"
-    NORMALIZED = "NORMALIZED"
-    DELEGATED = "DELEGATED"
-    AWAITING_CALLBACK = "AWAITING_CALLBACK"
-    REPLY_PENDING = "REPLY_PENDING"
-    REPLY_PUBLISHED = "REPLY_PUBLISHED"
-    REPLY_FAILED = "REPLY_FAILED"
-    FALLBACK_REQUIRED = "FALLBACK_REQUIRED"
-    CLOSED = "CLOSED"
+    RECEIVED = "received"
+    NORMALIZED = "normalized"
+    DELEGATED = "delegated"
+    AWAITING_CALLBACK = "awaiting_callback"
+    REPLY_PENDING = "reply_pending"
+    REPLY_PUBLISHED = "reply_published"
+    REPLY_FAILED = "reply_failed"
+    FALLBACK_REQUIRED = "fallback_required"
+    CLOSED = "closed"
 
 
 class PublishStatus(StrEnum):
-    PENDING = "PENDING"
-    ATTEMPTED = "ATTEMPTED"
-    PUBLISHED = "PUBLISHED"
-    FAILED = "FAILED"
-    UNKNOWN = "UNKNOWN"
-    FALLBACK_REQUIRED = "FALLBACK_REQUIRED"
-    ABANDONED = "ABANDONED"
+    PENDING = "pending"
+    ATTEMPTED = "attempted"
+    PUBLISHED = "published"
+    FAILED = "failed"
+    UNKNOWN = "unknown"
+    FALLBACK_REQUIRED = "fallback_required"
+    ABANDONED = "abandoned"
 
 
 class RequestClass(StrEnum):
-    SESSION_BOUND = "SESSION_BOUND"
-    DURABLE = "DURABLE"
+    SESSION_BOUND = "session_bound"
+    DURABLE = "durable"
 
 
 class ExecutionMode(StrEnum):
-    SESSION_BOUND = "SESSION_BOUND"
-    DETACHED = "DETACHED"
+    SESSION_BOUND = "session_bound"
+    DETACHED = "detached"
 
 
 class HandoffResolution(StrEnum):
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
 
 
 class TaskOutcome(StrEnum):
-    DONE = "DONE"
-    FAILED = "FAILED"
-    BLOCKED = "BLOCKED"
+    DONE = "done"
+    FAILED = "failed"
+    BLOCKED = "blocked"
 
 
 class JobStatus(StrEnum):
-    SCHEDULED = "SCHEDULED"
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    CANCELLED = "CANCELLED"
+    SCHEDULED = "scheduled"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class CommandStatus(StrEnum):
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
-    PROCESSED = "PROCESSED"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    PROCESSED = "processed"
 
 
 class OutboxStatus(StrEnum):
-    PENDING = "PENDING"
-    DISPATCHED = "DISPATCHED"
-    FAILED = "FAILED"
+    PENDING = "pending"
+    DISPATCHED = "dispatched"
+    FAILED = "failed"
 
 
 # ── Value Objects ─────────────────────────────────────────────────────

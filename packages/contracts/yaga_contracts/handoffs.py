@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
-
-from yaga_contracts.shared import HandoffStatus
 
 # ── Dispatch ────────────────────────────────────────────────────────
 
@@ -44,7 +43,7 @@ class HandoffAck(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     handoff_id: str
-    status: HandoffStatus
+    status: Literal["received"] = "received"
     received_at: datetime
 
 
@@ -54,7 +53,7 @@ class HandoffAcceptance(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     handoff_id: str
-    status: HandoffStatus
+    status: Literal["accepted"] = "accepted"
     owner: str
     accepted_at: datetime
 
@@ -65,7 +64,7 @@ class HandoffRejection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     handoff_id: str
-    status: HandoffStatus
+    status: Literal["rejected"] = "rejected"
     assignee: str
     reason: str
     rejected_at: datetime

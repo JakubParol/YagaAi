@@ -57,6 +57,21 @@ class TestPublicationStatusWebhook:
         assert wh.failure_reason == "timeout"
         assert wh.published_at is None
 
+    def test_published_without_published_at_raises(self) -> None:
+        with pytest.raises(ValidationError, match="published_at"):
+            self._make(
+                status=PublishStatus.PUBLISHED,
+                published_at=None,
+            )
+
+    def test_failed_without_failure_reason_raises(self) -> None:
+        with pytest.raises(ValidationError, match="failure_reason"):
+            self._make(
+                status=PublishStatus.FAILED,
+                failure_reason=None,
+                published_at=None,
+            )
+
     def test_frozen(self) -> None:
         wh = self._make()
         with pytest.raises(ValidationError):
@@ -87,7 +102,7 @@ class TestPublicationStatusWebhook:
             "failure_reason",
         }
         assert data["event_id"] == "evt-wire"
-        assert data["status"] == "PUBLISHED"
+        assert data["status"] == "published"
         assert data["failure_reason"] is None
 
 
